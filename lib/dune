@@ -1,0 +1,3 @@
+(library
+ (name dolphin_compiler)
+ (libraries printbox printbox-text))
