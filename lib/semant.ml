@@ -1,3 +1,4 @@
+module Sym = Symbol
 module TAst = TypedAst
 
 exception Unimplemented (* your code should eventually compile without this exception *)
@@ -27,7 +28,7 @@ let rec typecheck_statement env stm =
 and typecheck_statement_seq env stms = raise Unimplemented
 
 (* the initial environment should include all the library functions, no local variables, and no errors. *)
-let initial_environment = raise Unimplemented
+let initial_environment = Env.make_env Library.library_functions
 
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prg = raise Unimplemented

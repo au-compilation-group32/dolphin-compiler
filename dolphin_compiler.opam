@@ -13,6 +13,8 @@ bug-reports:
 depends: [
   "ocaml"
   "dune" {>= "3.16"}
+  "printbox"
+  "printbox-text"
   "odoc" {with-doc}
 ]
 build: [
