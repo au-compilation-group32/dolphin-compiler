@@ -57,7 +57,15 @@ and infertype_binop env left op right =
       let left_texpr = typecheck_expr env left expected_arg_typ in
       let right_texpr = typecheck_expr env right expected_arg_typ in
       (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = expected_res_typ}, expected_res_typ)
-    | Eq | NEq -> raise Unimplemented
+    | Eq | NEq ->
+      let left_texpr, left_tp = infertype_expr env left in
+      let right_texpr, right_tp = infertype_expr env right in
+      let _ = 
+        if left_tp <> TAst.ErrorType && right_tp <> TAst.ErrorType && left_tp <> right_tp
+        then let _ = typecheck_expr env left right_tp in ()
+        else ()
+      in (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = TAst.Bool}, TAst.Bool)
+
 and infertype_lval env lvl =
   match lvl with 
   | Ast.Var Ast.Ident {name} -> 
@@ -72,7 +80,7 @@ and infertype_lval env lvl =
       | FunTyp ft -> 
         match ft with TAst.FunTyp {ret; _} ->
           let _ = Env.insert_error env (Errors.LValueInvalid {sym = Sym.symbol name}) in
-          TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), ret
+          TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = ret}), ret
 
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
