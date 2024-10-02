@@ -50,25 +50,13 @@ let rec infertype_expr env expr =
   | Ast.Assignment _ -> raise Unimplemented
   | Ast.Call _ -> raise Unimplemented
 and infertype_binop env left op right =
-    let left_texpr, left_tp = infertype_expr env left in
-    let right_texpr, right_tp = infertype_expr env right in
     match op with
     | Plus | Minus | Mul | Div | Rem | Lt | Le | Gt | Ge | Lor | Land -> 
       let expected_arg_typ = get_expected_binop_arg_typ op in
       let expected_res_typ = get_expected_binop_res_typ op in
-      if left_tp = expected_arg_typ && right_tp = expected_arg_typ
-      then
-        (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = expected_res_typ}, expected_res_typ)
-      else
-        let _ = 
-          if left_tp <> expected_arg_typ then 
-            Env.insert_error env (Errors.TypeMismatch {expected = expected_arg_typ; actual = left_tp}) 
-        in
-        let _ =
-          if right_tp <> expected_arg_typ then
-            Env.insert_error env (Errors.TypeMismatch {expected = expected_arg_typ; actual = right_tp}) 
-        in
-        (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = TAst.ErrorType}, expected_res_typ)
+      let left_texpr = typecheck_expr env left expected_arg_typ in
+      let right_texpr = typecheck_expr env right expected_arg_typ in
+      (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = expected_res_typ}, expected_res_typ)
     | Eq | NEq -> raise Unimplemented
 and infertype_lval env lvl =
   match lvl with 
@@ -89,8 +77,9 @@ and infertype_lval env lvl =
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp = infertype_expr env expr in
-  if texprtp <> tp then raise Unimplemented;
-  texpr
+  if texprtp <> tp && texprtp <> TAst.ErrorType 
+  then let _ = Env.insert_error env (Errors.TypeMismatch {expected = tp; actual = texprtp}) in texpr
+  else texpr 
 
 (* should check the validity of a statement and produce the corresponding typed statement. Should use typecheck_expr and/or infertype_expr as necessary. *)
 let rec typecheck_statement env stm =
