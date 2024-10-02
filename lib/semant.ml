@@ -70,7 +70,7 @@ and infertype_assignment env lvl rhs =
     else if lvl_tp = rhs_tp then lvl_tp
     else let _ = Errors.TypeMismatch {expected = lvl_tp; actual = rhs_tp} in lvl_tp
   in match lvl with Ast.Var Ast.Ident {name} ->
-    TAst.Assignment {lvl = TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = lvl_tp}; rhs = rhs_texpr; tp = asgn_tp}, asgn_tp
+    (TAst.Assignment {lvl = TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = lvl_tp}; rhs = rhs_texpr; tp = asgn_tp}, asgn_tp)
 
 and infertype_lval env lvl =
   match lvl with 
@@ -79,13 +79,12 @@ and infertype_lval env lvl =
     match lvl_typ with
     | None ->
       let _ = Env.insert_error env (Errors.LValueNotFound {sym = Sym.symbol name}) in
-          TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType
-    | Some t ->
-      match t with
-      | VarTyp vt -> TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = vt}), vt
-      | FunTyp _ -> 
-        let _ = Env.insert_error env (Errors.LValueInvalid {sym = Sym.symbol name}) in
-        TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType 
+      (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType)
+    | Some VarTyp vt ->
+      (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = vt}), vt)
+    | Some FunTyp _ ->
+      let _ = Env.insert_error env (Errors.LValueInvalid {sym = Sym.symbol name}) in
+      (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType)
 
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
