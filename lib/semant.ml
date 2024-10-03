@@ -152,10 +152,13 @@ let rec typecheck_statement env stm =
     let newList = List.map sL stms in 
     let x : TAst.statement = TAst.CompoundStm {stms = newList} in x
 (* should use typecheck_statement to check the block of statements. *)
-and typecheck_statement_seq env stms = raise Unimplemented
+and typecheck_statement_seq env stms = List.map (typecheck_statement env) stms
 
 (* the initial environment should include all the library functions, no local variables, and no errors. *)
 let initial_environment = Env.make_env Library.library_functions
 
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
-let typecheck_prog prg = raise Unimplemented
+let typecheck_prog prg =
+  let env = initial_environment in
+  let _ = typecheck_statement_seq env prg
+  in Env.(env.errors)
