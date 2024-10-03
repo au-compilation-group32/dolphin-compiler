@@ -1,7 +1,7 @@
 module Sym = Symbol
 module TAst = TypedAst
 open Ast
-open Env
+module Env = Env
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnreachableControlFlow
@@ -48,7 +48,7 @@ let rec infertype_expr env expr =
   | Ast.UnOp {op; operand} -> raise Unimplemented
   | Ast.Lval lvl -> infertype_lval env lvl
   | Ast.Assignment {lvl; rhs} -> infertype_assignment env lvl rhs
-  | Ast.Call _ -> raise Unimplemented
+  | Ast.Call {fname; args} -> infertype_call env fname args
 and infertype_binop env left op right =
     match op with
     | Plus | Minus | Mul | Div | Rem | Lt | Le | Gt | Ge | Lor | Land -> 
@@ -71,7 +71,6 @@ and infertype_assignment env lvl rhs =
     else let _ = Errors.TypeMismatch {expected = lvl_tp; actual = rhs_tp} in lvl_tp
   in match lvl with Ast.Var Ast.Ident {name} ->
     (TAst.Assignment {lvl = TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = lvl_tp}; rhs = rhs_texpr; tp = asgn_tp}, asgn_tp)
-
 and infertype_lval env lvl =
   match lvl with 
   | Ast.Var Ast.Ident {name} -> 
@@ -80,12 +79,33 @@ and infertype_lval env lvl =
     | None ->
       let _ = Env.insert_error env (Errors.LValueNotFound {sym = Sym.symbol name}) in
       (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType)
-    | Some VarTyp vt ->
+    | Some Env.VarTyp vt ->
       (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = vt}), vt)
-    | Some FunTyp _ ->
+    | Some Env.FunTyp _ ->
       let _ = Env.insert_error env (Errors.LValueInvalid {sym = Sym.symbol name}) in
       (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType)
-
+and infertype_call env fname args =
+  match fname with Ast.Ident {name} ->
+    let fun_sym = Sym.symbol name in
+    let fun_in_env = Env.lookup_var_fun env fun_sym in
+    match fun_in_env with
+    | None ->
+      let _ = Env.insert_error env (Errors.FunctionUndeclared {sym = fun_sym}) in
+      (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = []; tp = TAst.ErrorType}, TAst.ErrorType)
+    | Some Env.VarTyp _ ->
+      let _ = Env.insert_error env (Errors.FunctionNameInvalid {sym = fun_sym}) in
+      (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = []; tp = TAst.ErrorType}, TAst.ErrorType)
+    | Some Env.FunTyp TAst.FunTyp {ret; params} ->
+      let params_count = List.length params in
+      let args_count = List.length args in
+      if params_count <> args_count
+        then
+          let _ = Env.insert_error env (Errors.FunctionParamCountMismatch{sym = fun_sym; expected = params_count; actual = args_count}) in
+          (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = []; tp = TAst.ErrorType}, TAst.ErrorType)
+        else
+          let typecheck_param arg (TAst.Param {paramname; typ}) = typecheck_expr env arg typ in
+          let typed_params = List.map2 typecheck_param args params in
+          (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = typed_params; tp = ret}, ret)
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp = infertype_expr env expr in
