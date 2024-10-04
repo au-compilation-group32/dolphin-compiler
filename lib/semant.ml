@@ -160,5 +160,5 @@ let initial_environment = Env.make_env Library.library_functions
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prg =
   let env = initial_environment in
-  let _ = typecheck_statement_seq env prg
-  in Env.(env.errors)
+  let tprog = typecheck_statement_seq env prg
+  in tprog, Env.(env.errors)
