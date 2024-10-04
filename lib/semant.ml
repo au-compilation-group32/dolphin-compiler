@@ -122,8 +122,7 @@ let rec typecheck_statement env stm =
   | Ast.VarDeclStm {name : Ast.ident; tp : Ast.typ option; body : Ast.expr} -> 
     let (b, t) = infertype_expr env body in
     let na : string = match name with Ast.Ident{name} -> name in
-    let (s,y) = Sym.symbol(na) in
-    let sy : Sym.symbol = (s,y) in
+    let sy : Sym.symbol = Sym.symbol na in
     let n : TAst.ident = TAst.Ident {sym=sy} in
     let x : TAst.statement = TAst.VarDeclStm {name = n; tp= t; body=b} in x
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
