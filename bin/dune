@@ -1,4 +1,4 @@
 (executable
  (public_name dolphin_compiler)
  (name main)
- (libraries dolphin_compiler))
+ (libraries lib))

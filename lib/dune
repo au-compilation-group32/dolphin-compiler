@@ -1,4 +1,4 @@
 (library
- (name dolphin_compiler)
+ (name lib)
  (libraries printbox printbox-text)
  (flags (:standard -w +A -warn-error -A)))
