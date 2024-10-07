@@ -134,7 +134,7 @@ let rec typecheck_statement env stm =
         let err = Errors.TypeMismatch {expected = TAst.Int; actual = t} in 
         let _ = Env.insert_error env err in t
     in
-    let x : TAst.statement = TAst.ReturnStm {ret=b} in x
+    let x : TAst.statement = TAst.ReturnStm {ret=b} in (x, env)
   | Ast.VarDeclStm {name : Ast.ident; tp : Ast.typ option; body : Ast.expr} -> 
     let (b, t) = infertype_expr env body in
     let tpNew = 
@@ -158,8 +158,8 @@ let rec typecheck_statement env stm =
     let na : string = match name with Ast.Ident{name} -> name in
     let sy : Sym.symbol = Sym.symbol na in
     let n : TAst.ident = TAst.Ident {sym=sy} in
-    let env = Env.insert_local_decl env sy t in
-    let x : TAst.statement = TAst.VarDeclStm {name = n; tp= t; body=b} in x
+    let new_env = Env.insert_local_decl env sy t in
+    let x : TAst.statement = TAst.VarDeclStm {name = n; tp= t; body=b} in (x, new_env)
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
     let (b, t) = infertype_expr env cond in 
     let check_type : TAst.typ = 
@@ -168,12 +168,12 @@ let rec typecheck_statement env stm =
         let err = Errors.TypeMismatch {expected = TAst.Bool; actual = t} in 
         let _ = Env.insert_error env err in t
     in
-    let thS : TAst.statement = typecheck_statement env thbr in
+    let thS, _ = typecheck_statement env thbr in
     begin match elbro with 
-    | Some e -> let elS : TAst.statement = typecheck_statement env e in
-      let x : TAst.statement = TAst.IfThenElseStm {cond = b; thbr = thS; elbro = Some elS} in x
+    | Some e -> let elS, _ = typecheck_statement env e in
+      let x : TAst.statement = TAst.IfThenElseStm {cond = b; thbr = thS; elbro = Some elS} in (x, env)
     | None -> let elS : TAst.statement option = None in 
-      let x : TAst.statement = TAst.IfThenElseStm {cond = b; thbr = thS; elbro = elS} in x
+      let x : TAst.statement = TAst.IfThenElseStm {cond = b; thbr = thS; elbro = elS} in (x, env)
       end
   | Ast.ExprStm {expr : Ast.expr option} -> 
     begin match expr with 
@@ -189,22 +189,29 @@ let rec typecheck_statement env stm =
       in
       let (b, t) = infertype_expr env e in
       let b2 : TAst.expr option = Some b in 
-      let x = TAst.ExprStm {expr=b2} in x
+      let x = TAst.ExprStm {expr=b2} in (x, env)
     | None -> 
       let n : TAst.expr option = None in 
-      let x = TAst.ExprStm {expr = n} in x 
+      let x = TAst.ExprStm {expr = n} in (x, env)
     end
   | Ast.CompoundStm {stms : Ast.statement list} -> 
-    let envTempItems = Env.(env.idents) in
+    let tstmt_list, new_env = typecheck_statement_seq env stms in
+    (* let envTempItems = Env.(env.idents) in
     let envTempErr = Env.(env.errors) in
     let envTemp : Env.environment = {idents = envTempItems; errors = envTempErr} in
     let sL elem = 
       typecheck_statement envTemp elem 
     in
-    let newList = List.map sL stms in 
-    let x : TAst.statement = TAst.CompoundStm {stms = newList} in x
+    let newList = List.map sL stms in  *)
+    let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, new_env)
 (* should use typecheck_statement to check the block of statements. *)
-and typecheck_statement_seq env stms = List.map (typecheck_statement env) stms
+and typecheck_statement_seq env stms =
+  match stms with
+  | [] -> ([], env)
+  | h::t ->
+    let typed_h, env1 = typecheck_statement env h in
+    let typed_t, env2 = typecheck_statement_seq env1 t in
+    (typed_h :: typed_t, env2)
 
 (* the initial environment should include all the library functions, no local variables, and no errors. *)
 let initial_environment = Env.make_env Library.library_functions
@@ -212,5 +219,5 @@ let initial_environment = Env.make_env Library.library_functions
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prg =
   let env = initial_environment in
-  let tprog = typecheck_statement_seq env prg
+  let tprog , _ = typecheck_statement_seq env prg
   in tprog, Env.(env.errors)
