@@ -5,6 +5,7 @@ module TPretty = TypedPretty
 
 type error =
 | TypeMismatch of {expected : TAst.typ; actual : TAst.typ}
+| ShouldBeCallOrAssignment of {expr : Ast.expr}
 | LValueNotFound of {sym: Sym.symbol}
 | LValueInvalid of {sym: Sym.symbol}
 | FunctionUndeclared of {sym: Sym.symbol}
