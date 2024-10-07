@@ -13,40 +13,44 @@ let ll_type_of = function
   | TAst.Bool -> Ll.I1
   | TAst.ErrorType -> raise UnexpectedErrorType
 
+let ptr_operand_of_lval = function
+  | TAst.Var {ident; tp} ->
+      match ident with TAst.Ident {sym} -> Ll.Id sym
+
 let rec codegen_expr expr =
   match expr with
   | TAst.Integer {int} -> ([],Ll.I64, Ll.IConst64 int)
   | TAst.Boolean {bool} -> ([], Ll.I1, Ll.BConst bool)
   | TAst.BinOp {left; op; right; tp} -> codegen_binop left op right tp
   | TAst.UnOp {op; operand; tp} -> raise Unimplemented
-  | TAst.Lval lvl ->  raise Unimplemented
+  | TAst.Lval lvl ->  codegen_lval lvl
   | TAst.Assignment {lvl; rhs; tp} -> codegen_assignment lvl rhs tp
   | TAst.Call {fname; args; tp} ->  raise Unimplemented
 and codegen_binop left op right tp = raise Unimplemented
 and codegen_assignment lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr rhs in
   let _ = assert (rhs_tp = ll_type_of tp) in
-  let tmp_sym = Sym.symbol "tmp" in
-  let lvl_buildlets, lvl_tp, lvl_op = codegen_lval lvl in
-  let _ = assert (lvl_tp = rhs_tp) in
-  let insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Store(rhs_tp, rhs_op, lvl_op)) in
-  (rhs_buildlets @ lvl_buildlets @ [insn], lvl_tp, rhs_op)
+  let lvl_op = ptr_operand_of_lval lvl in
+  let insn = CfgBuilder.add_insn (None, Ll.Store(rhs_tp, rhs_op, lvl_op)) in
+  (rhs_buildlets @ [insn], rhs_tp, rhs_op)
 and codegen_lval lvl =
   match lvl with
   | TAst.Var {ident; tp}->
-    match ident with TAst.Ident {sym} ->
-      ([], ll_type_of tp, Ll.Id sym)
+    let lvl_op = ptr_operand_of_lval lvl in
+    let ll_typ = ll_type_of tp in
+    let tmp_sym = Sym.symbol "tmp" in
+    let insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Load(ll_typ, lvl_op)) in
+    ([insn], ll_typ, Ll.Id tmp_sym)
 
 let rec codegen_statement stm =
   match stm with
   | TAst.VarDeclStm {name; tp; body} ->
-    let expr_buildlets, expr_tp, expr_op = codegen_expr body in
     let ll_type = ll_type_of tp in
-    let _ = assert (expr_tp = ll_type) in
-    begin match name with TAst.Ident {sym} ->
-      let i1 = CfgBuilder.add_alloca (sym, ll_type) in
-      expr_buildlets @ [i1]
-    end
+    let TAst.Ident {sym} = name in
+    let i1 = CfgBuilder.add_alloca (sym, ll_type) in
+    let asgn_buildlets, asgn_tp, asgn_op = codegen_assignment (TAst.Var {ident = name; tp = tp}) body tp in
+    let _ = assert (asgn_tp = ll_type) in
+    [i1] @ asgn_buildlets
   | TAst.ExprStm {expr} -> raise Unimplemented
   | TAst.IfThenElseStm {cond; thbr; elbro} -> raise Unimplemented
   | TAst.CompoundStm {stms} -> raise Unimplemented
