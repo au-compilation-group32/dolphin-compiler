@@ -25,11 +25,12 @@ let rec codegen_expr expr =
 and codegen_binop left op right tp = raise Unimplemented
 and codegen_assignment lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr rhs in
+  let _ = assert (rhs_tp = ll_type_of tp) in
   let tmp_sym = Sym.symbol "tmp" in
   let lvl_buildlets, lvl_tp, lvl_op = codegen_lval lvl in
   let _ = assert (lvl_tp = rhs_tp) in
   let insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Store(rhs_tp, rhs_op, lvl_op)) in
-  (rhs_buildlets @ lvl_buildlets @ [insn], lvl_tp, lvl_op)
+  (rhs_buildlets @ lvl_buildlets @ [insn], lvl_tp, rhs_op)
 and codegen_lval lvl =
   match lvl with
   | TAst.Var {ident; tp}->
@@ -38,7 +39,14 @@ and codegen_lval lvl =
 
 let rec codegen_statement stm =
   match stm with
-  | TAst.VarDeclStm {name; tp; body} -> raise Unimplemented
+  | TAst.VarDeclStm {name; tp; body} ->
+    let expr_buildlets, expr_tp, expr_op = codegen_expr body in
+    let ll_type = ll_type_of tp in
+    let _ = assert (expr_tp = ll_type) in
+    begin match name with TAst.Ident {sym} ->
+      let i1 = CfgBuilder.add_alloca (sym, ll_type) in
+      expr_buildlets @ [i1]
+    end
   | TAst.ExprStm {expr} -> raise Unimplemented
   | TAst.IfThenElseStm {cond; thbr; elbro} -> raise Unimplemented
   | TAst.CompoundStm {stms} -> raise Unimplemented
