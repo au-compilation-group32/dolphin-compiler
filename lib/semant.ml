@@ -36,8 +36,8 @@ let get_expected_binop_res_typ = function
   | Lor | Land -> TAst.Bool
   | Eq | NEq -> TAst.Bool
 let get_expected_unop_arg_typ = function 
-  | Neg -> raise Unimplemented
-  | Lnot -> raise Unimplemented
+  | Neg -> TAst.Int
+  | Lnot -> TAst.Bool
 
 (* should return a pair of a typed expression and its inferred type. you can/should use typecheck_expr inside infertype_expr. *)
 let rec infertype_expr env expr =
@@ -45,7 +45,15 @@ let rec infertype_expr env expr =
   | Ast.Integer {int} -> (TAst.Integer {int}, TAst.Int)
   | Ast.Boolean {bool} -> (TAst.Boolean {bool}, TAst.Bool)
   | Ast.BinOp {left; op; right} -> infertype_binop env left op right
-  | Ast.UnOp {op; operand} -> raise Unimplemented
+  | Ast.UnOp {op; operand} -> (*infertype_expr env operand*)
+    let (b, t) = infertype_expr env operand in 
+    let un = get_expected_unop_arg_typ op in
+    let final_type : TAst.typ = 
+      if t = un then t
+      else 
+        let err = Errors.TypeMismatch {expected = t; actual = un} in 
+        let _ = Env.insert_error env err in t
+    in (b, final_type)
   | Ast.Lval lvl -> infertype_lval env lvl
   | Ast.Assignment {lvl; rhs} -> infertype_assignment env lvl rhs
   | Ast.Call {fname; args} -> infertype_call env fname args
@@ -68,7 +76,9 @@ and infertype_assignment env lvl rhs =
     if rhs_tp = TAst.ErrorType then lvl_tp
     else if lvl_tp = TAst.ErrorType then rhs_tp
     else if lvl_tp = rhs_tp then lvl_tp
-    else let _ = Errors.TypeMismatch {expected = lvl_tp; actual = rhs_tp} in lvl_tp
+    else 
+      let err = Errors.TypeMismatch {expected = lvl_tp; actual = rhs_tp} in 
+      let _ = Env.insert_error env err in lvl_tp
   in match lvl with Ast.Var Ast.Ident {name} ->
     (TAst.Assignment {lvl = TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = lvl_tp}; rhs = rhs_texpr; tp = asgn_tp}, asgn_tp)
 and infertype_lval env lvl =
@@ -118,15 +128,46 @@ let rec typecheck_statement env stm =
   match stm with
   | Ast.ReturnStm {ret : Ast.expr} -> 
     let (b , t) = infertype_expr env ret in 
+    let final_type = 
+      if t = TAst.Int then t
+      else 
+        let err = Errors.TypeMismatch {expected = TAst.Int; actual = t} in 
+        let _ = Env.insert_error env err in t
+    in
     let x : TAst.statement = TAst.ReturnStm {ret=b} in x
   | Ast.VarDeclStm {name : Ast.ident; tp : Ast.typ option; body : Ast.expr} -> 
     let (b, t) = infertype_expr env body in
+    let tpNew = 
+      begin match tp with
+      | None -> None
+      | Some ts -> 
+        let tsNew = typecheck_typ ts in
+        Some tsNew
+        end
+    in
+    let final_type : TAst.typ = 
+      begin match tpNew with
+      | None -> t
+      | Some ts ->
+        if t = ts then t
+        else 
+          let err = Errors.TypeMismatch {expected = t; actual = ts} in 
+          let _ = Env.insert_error env err in t
+        end
+    in
     let na : string = match name with Ast.Ident{name} -> name in
     let sy : Sym.symbol = Sym.symbol na in
     let n : TAst.ident = TAst.Ident {sym=sy} in
+    let env = Env.insert_local_decl env sy t in
     let x : TAst.statement = TAst.VarDeclStm {name = n; tp= t; body=b} in x
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
     let (b, t) = infertype_expr env cond in 
+    let check_type : TAst.typ = 
+      if t = TAst.Bool then t
+      else 
+        let err = Errors.TypeMismatch {expected = TAst.Bool; actual = t} in 
+        let _ = Env.insert_error env err in t
+    in
     let thS : TAst.statement = typecheck_statement env thbr in
     begin match elbro with 
     | Some e -> let elS : TAst.statement = typecheck_statement env e in
@@ -137,7 +178,16 @@ let rec typecheck_statement env stm =
   | Ast.ExprStm {expr : Ast.expr option} -> 
     begin match expr with 
     | Some e ->
-      let (b, _) = infertype_expr env e in
+      let check_type : Ast.expr = 
+        begin match e with
+        | Ast.Assignment {lvl; rhs} -> e
+        | Ast.Call {fname; args} -> e 
+        | _ -> 
+          let err = Errors.ShouldBeCallOrAssignment {expr = e} in 
+          let _ = Env.insert_error env err in e
+          end
+      in
+      let (b, t) = infertype_expr env e in
       let b2 : TAst.expr option = Some b in 
       let x = TAst.ExprStm {expr=b2} in x
     | None -> 
@@ -145,8 +195,11 @@ let rec typecheck_statement env stm =
       let x = TAst.ExprStm {expr = n} in x 
     end
   | Ast.CompoundStm {stms : Ast.statement list} -> 
+    let envTempItems = Env.(env.idents) in
+    let envTempErr = Env.(env.errors) in
+    let envTemp : Env.environment = {idents = envTempItems; errors = envTempErr} in
     let sL elem = 
-      typecheck_statement env elem 
+      typecheck_statement envTemp elem 
     in
     let newList = List.map sL stms in 
     let x : TAst.statement = TAst.CompoundStm {stms = newList} in x
