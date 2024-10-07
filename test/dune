@@ -1,3 +1,6 @@
 (test
  (name test_semant)
  (libraries lib))
+(test
+ (name test_codegen)
+ (libraries lib))
