@@ -10,9 +10,10 @@ let prog_1: test_case = "prog_1: Return 0", [ReturnStm {ret = Integer {int = 0L}
 let prog_2: test_case = "prog_2: Return 1", [ReturnStm {ret = Integer {int = 1L}}]
 let prog_3: test_case = "prog_3: ",
   let x = Ident {name = "x"} in
+  (* let y = Ident {name = "y"} in *)
   [
     VarDeclStm {name = x; tp = None; body = Integer {int = 1L}};
-    ExprStm {expr = Some (BinOp {left = Integer {int = 0L}; op = Plus; right = Lval (Var x)})};
+    (* VarDeclStm {name = y; tp = None; body = BinOp {left = Integer {int = 0L}; op = Plus; right = Lval (Var x)}}; *)
     ReturnStm {ret = Lval (Var x)}
   ]
 
