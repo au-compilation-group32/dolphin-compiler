@@ -24,6 +24,11 @@ let insert_tmp_reg env =
   let new_env, alias_sym = insert_reg env tmp_sym in
   new_env, alias_sym
 
+let insert_label env = 
+  let tmp_sym = Sym.symbol "label" in
+  let new_env, alias_sym = insert_reg env tmp_sym in
+  new_env, alias_sym
+
 let rec lookup_aux lst sym =
   match lst with
   | [] -> failwith ("Symbol " ^ (Sym.name sym) ^ " not found.")
