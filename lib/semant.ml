@@ -113,7 +113,7 @@ and infertype_call env fname args =
           let _ = Env.insert_error env (Errors.FunctionParamCountMismatch{sym = fun_sym; expected = params_count; actual = args_count}) in
           (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = []; tp = TAst.ErrorType}, TAst.ErrorType)
         else
-          let typecheck_param arg (TAst.Param {paramname; typ}) = typecheck_expr env arg typ in
+          let typecheck_param arg (TAst.Param {paramname = _; typ}) = typecheck_expr env arg typ in
           let typed_params = List.map2 typecheck_param args params in
           (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = typed_params; tp = ret}, ret)
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
@@ -128,7 +128,7 @@ let rec typecheck_statement env stm =
   match stm with
   | Ast.ReturnStm {ret : Ast.expr} -> 
     let (b , t) = infertype_expr env ret in 
-    let final_type = 
+    let _ = 
       if t = TAst.Int then t
       else 
         let err = Errors.TypeMismatch {expected = TAst.Int; actual = t} in 
@@ -145,7 +145,7 @@ let rec typecheck_statement env stm =
         Some tsNew
         end
     in
-    let final_type : TAst.typ = 
+    let _ : TAst.typ = 
       begin match tpNew with
       | None -> t
       | Some ts ->
@@ -162,7 +162,7 @@ let rec typecheck_statement env stm =
     let x : TAst.statement = TAst.VarDeclStm {name = n; tp= t; body=b} in (x, new_env)
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
     let (b, t) = infertype_expr env cond in 
-    let check_type : TAst.typ = 
+    let _ = 
       if t = TAst.Bool then t
       else 
         let err = Errors.TypeMismatch {expected = TAst.Bool; actual = t} in 
@@ -178,7 +178,7 @@ let rec typecheck_statement env stm =
   | Ast.ExprStm {expr : Ast.expr option} -> 
     begin match expr with 
     | Some e ->
-      let check_type : Ast.expr = 
+      let _ = 
         begin match e with
         | Ast.Assignment {lvl; rhs} -> e
         | Ast.Call {fname; args} -> e 
@@ -187,7 +187,7 @@ let rec typecheck_statement env stm =
           let _ = Env.insert_error env err in e
           end
       in
-      let (b, t) = infertype_expr env e in
+      let (b, _) = infertype_expr env e in
       let b2 : TAst.expr option = Some b in 
       let x = TAst.ExprStm {expr=b2} in (x, env)
     | None -> 
@@ -195,7 +195,7 @@ let rec typecheck_statement env stm =
       let x = TAst.ExprStm {expr = n} in (x, env)
     end
   | Ast.CompoundStm {stms : Ast.statement list} -> 
-    let tstmt_list, new_env = typecheck_statement_seq env stms in
+    let tstmt_list, _ = typecheck_statement_seq env stms in
     (* let envTempItems = Env.(env.idents) in
     let envTempErr = Env.(env.errors) in
     let envTemp : Env.environment = {idents = envTempItems; errors = envTempErr} in

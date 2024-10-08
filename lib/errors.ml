@@ -24,3 +24,4 @@ let error_to_string err =
   | FunctionNameInvalid {sym; _} -> Printf.sprintf "Expect function name, but %s is a var name." (Sym.name sym)
   | FunctionParamCountMismatch{sym; expected; actual; _} -> Printf.sprintf "Function %s expects %d params, but is given %d params." (Sym.name sym) expected actual
   | ShouldBeCallOrAssignment {expr} -> Printf.sprintf "Expression Statement must be either Call or Assignment"
+  | NoReturn {sta} -> Printf.sprintf "Program has no return."
