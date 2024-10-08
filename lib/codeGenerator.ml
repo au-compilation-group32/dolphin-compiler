@@ -5,6 +5,7 @@ module Env = LlvmEnv
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedErrorType
+exception UnexpectedVoidType
 
 let string_of_sym (name, i) = name ^ (string_of_int i)
 
@@ -20,6 +21,35 @@ let ptr_operand_of_lval env = function
     let lval_sym = Env.lookup env sym in
     Ll.Id lval_sym
 
+(*Return add_insn of res_op = left_op op right_op *)
+let get_binop_insn res_op left_op op right_op op_tp = 
+  match op with
+  | TAst.Plus -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.Add, Ll.I64, left_op, right_op))
+  | TAst.Minus -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.Sub, Ll.I64, left_op, right_op))
+  | TAst.Mul -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.Mul, Ll.I64, left_op, right_op))
+  | TAst.Div -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.SDiv, Ll.I64, left_op, right_op))
+  | TAst.Rem -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.SRem, Ll.I64, left_op, right_op))
+  | TAst.Lt -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Slt, Ll.I64, left_op, right_op))
+  | TAst.Le -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sle, Ll.I64, left_op, right_op))
+  | TAst.Gt -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sgt, Ll.I64, left_op, right_op))
+  | TAst.Ge -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sge, Ll.I64, left_op, right_op))
+  | TAst.Lor -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.Or, Ll.I1, left_op, right_op))
+  | TAst.Land -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.And, Ll.I1, left_op, right_op))
+  | TAst.Eq -> 
+    begin match op_tp with
+    | TAst.Int -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.I64, left_op, right_op))
+    | TAst.Bool -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.I1, left_op, right_op))
+    | TAst.Void -> raise UnexpectedVoidType
+    | TAst.ErrorType -> raise UnexpectedErrorType
+    end
+  | TAst.NEq ->
+    begin match op_tp with
+    | TAst.Int -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.I64, left_op, right_op))
+    | TAst.Bool -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.I1, left_op, right_op))
+    | TAst.Void -> raise UnexpectedVoidType
+    | TAst.ErrorType -> raise UnexpectedErrorType
+    end
+
 let rec codegen_expr env expr =
   match expr with
   | TAst.Integer {int} -> ([],Ll.I64, Ll.IConst64 int)
@@ -29,7 +59,16 @@ let rec codegen_expr env expr =
   | TAst.Lval lvl ->  codegen_lval env lvl
   | TAst.Assignment {lvl; rhs; tp} -> codegen_assignment env lvl rhs tp
   | TAst.Call {fname; args; tp} ->  raise Unimplemented
-and codegen_binop env left op right tp = raise Unimplemented
+and codegen_binop env left op right tp =
+  let ll_tp = ll_type_of tp in
+  let left_buildlets, left_tp, left_op = codegen_expr env left in
+  let _ = assert(left_tp = ll_tp) in
+  let right_buildlets, right_tp, right_op = codegen_expr env right in
+  let _ = assert(right_tp = ll_tp) in
+  let tmp_sym = Env.insert_tmp_reg env in
+  let tmp_op = Ll.Id tmp_sym in
+  let binop_insn = get_binop_insn tmp_sym left_op op right_op tp in
+  (left_buildlets @ right_buildlets @ [binop_insn], ll_tp, tmp_op)
 and codegen_assignment env lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
   let _ = assert (rhs_tp = ll_type_of tp) in
