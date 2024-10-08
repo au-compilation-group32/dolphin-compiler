@@ -18,7 +18,7 @@ let ll_type_of = function
 let ptr_operand_of_lval env = function
   | TAst.Var {ident; _} ->
     let TAst.Ident {sym} = ident in
-    let lval_sym = Env.lookup env sym in
+    let lval_sym = Env.get_alias_sym env sym in
     Ll.Id lval_sym
 
 (*Return add_insn of res_op = left_op op right_op *)
@@ -65,9 +65,9 @@ and codegen_binop env left op right tp =
   let _ = assert(left_tp = ll_tp) in
   let right_buildlets, right_tp, right_op = codegen_expr env right in
   let _ = assert(right_tp = ll_tp) in
-  let tmp_sym = Env.insert_tmp_reg env in
-  let tmp_op = Ll.Id tmp_sym in
-  let binop_insn = get_binop_insn tmp_sym left_op op right_op tp in
+  let _, tmp_alias_sym = Env.insert_tmp_reg env in
+  let tmp_op = Ll.Id tmp_alias_sym in
+  let binop_insn = get_binop_insn tmp_alias_sym left_op op right_op tp in
   (left_buildlets @ right_buildlets @ [binop_insn], ll_tp, tmp_op)
 and codegen_assignment env lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
@@ -80,30 +80,34 @@ and codegen_lval env lvl =
   | TAst.Var {ident = _; tp}->
     let lvl_op = ptr_operand_of_lval env lvl in
     let ll_typ = ll_type_of tp in
-    let tmp_sym = Env.insert_tmp_reg env in
-    let insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Load(ll_typ, lvl_op)) in
-    ([insn], ll_typ, Ll.Id tmp_sym)
+    let _, tmp_alias_sym = Env.insert_tmp_reg env in
+    let insn = CfgBuilder.add_insn (Some tmp_alias_sym, Ll.Load(ll_typ, lvl_op)) in
+    ([insn], ll_typ, Ll.Id tmp_alias_sym)
 
 let rec codegen_statement env stm =
   match stm with
   | TAst.VarDeclStm {name; tp; body} ->
     let ll_type = ll_type_of tp in
     let TAst.Ident {sym} = name in
-    let var_sym = Env.insert_reg_by_sym env sym in
-    let i1 = CfgBuilder.add_alloca (var_sym, ll_type) in
-    let asgn_buildlets, asgn_tp, _ = codegen_assignment env (TAst.Var {ident = name; tp = tp}) body tp in
+    let new_env, var_alias_sym = Env.insert_reg env sym in
+    let i1 = CfgBuilder.add_alloca (var_alias_sym, ll_type) in
+    let asgn_buildlets, asgn_tp, _ = codegen_assignment new_env (TAst.Var {ident = name; tp = tp}) body tp in
     let _ = assert (asgn_tp = ll_type) in
-    [i1] @ asgn_buildlets
+    ([i1] @ asgn_buildlets, new_env)
   | TAst.ExprStm {expr} -> raise Unimplemented
   | TAst.IfThenElseStm {cond; thbr; elbro} -> raise Unimplemented
   | TAst.CompoundStm {stms} -> raise Unimplemented
   | TAst.ReturnStm {ret} ->
     let buildlets, ret_tp, ret_operand = codegen_expr env ret in
     let tr = CfgBuilder.term_block (Ll.Ret (ret_tp, Some ret_operand)) in
-    buildlets @ [tr]
+    (buildlets @ [tr], env)
 and codegen_statement_seq env stms =
-  let buildlet_lists = List.map (codegen_statement env) stms in
-  List.fold_left ( @ ) [] buildlet_lists
+  let merge ret stms = 
+    let (current_buildlets, current_env) = ret in
+    let stms_buildlets, new_env = codegen_statement current_env stms in
+    (current_buildlets @ stms_buildlets, new_env)
+  in
+  List.fold_left merge ([], env) stms
 
 let codegen_prog prg =
   let open Sym in
@@ -111,8 +115,9 @@ let codegen_prog prg =
   let open CfgBuilder in
   let env = Env.make_empty_env in
   let builder = empty_cfg_builder in
-  let buildets = seq_buildlets (codegen_statement_seq env prg) in
-  let cfg = get_cfg (buildets builder) in
+  let buildlets, _ = codegen_statement_seq env prg in
+  let seq_buildlets = seq_buildlets buildlets in
+  let cfg = get_cfg (seq_buildlets builder) in
   { tdecls    = []
   ; extgdecls = []
   ; gdecls    = []

@@ -5,32 +5,32 @@ exception Unimplemented (* your code should eventually compile without this exce
 module Sym = Symbol
 module TAst = TypedAst
 
-type reg = string * Sym.symbol
+type reg = {real: Sym.symbol; alias: Sym.symbol}
 let string_of_reg (_, sym) = Sym.name sym
 
-type llvmEnvironment = reg list ref
+type llvmEnvironment = {regs: reg list; counter: int ref}
 
 (* create an initial environment with the given functions defined *)
-let make_empty_env :llvmEnvironment = ref []
+let make_empty_env :llvmEnvironment = {regs = []; counter = ref 0}
 
-let insert_reg_by_name env name =
-  let index = List.length !env in
-  let reg_sym = Sym.symbol (name ^ string_of_int index) in
-  let _ = env := (name, reg_sym) :: !env in
-  reg_sym
+let insert_reg env sym =
+  let {regs; counter} = env in
+  let alias_sym = Sym.symbol (Sym.name sym ^ string_of_int !counter) in
+  let _ = counter := !counter + 1 in
+  ({env with regs = {real = sym; alias = alias_sym} :: regs}, alias_sym)
 
-let insert_reg_by_sym env sym =
-  let name = Sym.name sym in
-  insert_reg_by_name env name
-
-let insert_tmp_reg env = insert_reg_by_name env "tmp"
+let insert_tmp_reg env = 
+  let tmp_sym = Sym.symbol "tmp" in
+  let new_env, alias_sym = insert_reg env tmp_sym in
+  new_env, alias_sym
 
 let rec lookup_aux lst sym =
-  let name = Sym.name sym in
   match lst with
-  | [] -> raise Not_found
+  | [] -> failwith ("Symbol " ^ (Sym.name sym) ^ " not found.")
   | h::t ->
-    let (h_name, h_sym) = h in
-    if h_name = name then h_sym else lookup_aux t sym
+    let {real = h_real; alias = h_alias} = h in
+    if h_real = sym then h_alias else lookup_aux t sym
 
-let lookup env sym = lookup_aux !env sym
+let get_alias_sym env sym =
+  let {regs; _} = env in
+  lookup_aux regs sym
