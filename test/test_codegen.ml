@@ -14,7 +14,7 @@ let prog_3: test_case = "prog_3: ",
   let z = Ident {name = "z"} in
   [
     VarDeclStm {name = x; tp = None; body = Integer {int = 1L}};
-    VarDeclStm {name = y; tp = None; body = Lval (Var x)};
+    VarDeclStm {name = y; tp = None; body = Assignment {lvl = Var x; rhs = BinOp {left = Lval(Var x); op = Plus; right = Integer {int = 2L}}}};
     VarDeclStm {name = z; tp = None; body = BinOp {left = Lval (Var x); op = Plus; right = Lval (Var y)}};
     ReturnStm {ret = Lval (Var z)}
   ]
