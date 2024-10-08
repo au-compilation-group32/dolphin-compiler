@@ -77,7 +77,7 @@ and codegen_assignment env lvl rhs tp =
   (rhs_buildlets @ [insn], rhs_tp, rhs_op)
 and codegen_lval env lvl =
   match lvl with
-  | TAst.Var {ident; tp}->
+  | TAst.Var {ident = _; tp}->
     let lvl_op = ptr_operand_of_lval env lvl in
     let ll_typ = ll_type_of tp in
     let tmp_sym = Env.insert_tmp_reg env in
@@ -91,7 +91,7 @@ let rec codegen_statement env stm =
     let TAst.Ident {sym} = name in
     let var_sym = Env.insert_reg_by_sym env sym in
     let i1 = CfgBuilder.add_alloca (var_sym, ll_type) in
-    let asgn_buildlets, asgn_tp, asgn_op = codegen_assignment env (TAst.Var {ident = name; tp = tp}) body tp in
+    let asgn_buildlets, asgn_tp, _ = codegen_assignment env (TAst.Var {ident = name; tp = tp}) body tp in
     let _ = assert (asgn_tp = ll_type) in
     [i1] @ asgn_buildlets
   | TAst.ExprStm {expr} -> raise Unimplemented
