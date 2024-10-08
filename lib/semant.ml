@@ -203,7 +203,7 @@ let rec typecheck_statement env stm =
       typecheck_statement envTemp elem 
     in
     let newList = List.map sL stms in  *)
-    let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, new_env)
+    let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, env)
 (* should use typecheck_statement to check the block of statements. *)
 and typecheck_statement_seq env stms =
   match stms with
@@ -219,5 +219,19 @@ let initial_environment = Env.make_env Library.library_functions
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prg =
   let env = initial_environment in
-  let tprog , _ = typecheck_statement_seq env prg
-  in tprog, Env.(env.errors)
+  let tprog , _ = typecheck_statement_seq env prg in 
+  let temp = List.length tprog in
+  let env2 = if temp = 0 
+    then 
+      let err = Errors.NoReturn {sta = None} in 
+      let _ = Env.insert_error env err in env
+    else
+      let x = List.nth tprog temp in
+      begin match x with
+    | TAst.ReturnStm {ret} -> env
+    | _ -> 
+      let err = Errors.NoReturn {sta = Some x} in 
+      let _ = Env.insert_error env err in env
+      end
+  in
+  tprog, Env.(env2.errors)
