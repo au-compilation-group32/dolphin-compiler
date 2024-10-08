@@ -226,7 +226,7 @@ let typecheck_prog prg =
       let err = Errors.NoReturn {sta = None} in 
       let _ = Env.insert_error env err in env
     else
-      let x = List.nth tprog temp in
+      let x = List.nth tprog (temp-1) in
       begin match x with
     | TAst.ReturnStm {ret} -> env
     | _ -> 
