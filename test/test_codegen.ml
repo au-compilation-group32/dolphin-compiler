@@ -8,15 +8,40 @@ type test_case = string * Lib.Ast.program
 
 let prog_1: test_case = "prog_1: Return 0", [ReturnStm {ret = Integer {int = 0L}}]
 let prog_2: test_case = "prog_2: Return 1", [ReturnStm {ret = Integer {int = 1L}}]
-let prog_3: test_case = "prog_3: ",
+let prog_3: test_case = "prog_3: None Else branch",
   let x = Ident {name = "x"} in
   let y = Ident {name = "y"} in
   let z = Ident {name = "z"} in
+  let t = Ident {name = "t"} in
   [
     VarDeclStm {name = x; tp = None; body = Integer {int = 1L}};
     VarDeclStm {name = y; tp = None; body = Assignment {lvl = Var x; rhs = BinOp {left = Lval(Var x); op = Plus; right = Integer {int = 2L}}}};
     VarDeclStm {name = z; tp = None; body = BinOp {left = Lval (Var x); op = Plus; right = Lval (Var y)}};
-    ReturnStm {ret = Lval (Var z)}
+    VarDeclStm {name = t; tp = None; body = Integer {int = 0L}};
+    IfThenElseStm {
+      cond = BinOp {left = Lval (Var x); op = Eq; right = Integer {int = 1L}};
+      thbr = ExprStm {expr = Some (Assignment {lvl = Var t; rhs = Lval (Var y)})};
+      elbro = None;
+    };
+    ReturnStm {ret = Lval (Var t)}
+  ]
+
+let prog_4: test_case = "prog_4: ",
+  let x = Ident {name = "x"} in
+  let y = Ident {name = "y"} in
+  let z = Ident {name = "z"} in
+  let t = Ident {name = "t"} in
+  [
+    VarDeclStm {name = x; tp = None; body = Integer {int = 1L}};
+    VarDeclStm {name = y; tp = None; body = Assignment {lvl = Var x; rhs = BinOp {left = Lval(Var x); op = Plus; right = Integer {int = 2L}}}};
+    VarDeclStm {name = z; tp = None; body = BinOp {left = Lval (Var x); op = Plus; right = Lval (Var y)}};
+    VarDeclStm {name = t; tp = None; body = Integer {int = 0L}};
+    IfThenElseStm {
+      cond = BinOp {left = Lval (Var x); op = Eq; right = Integer {int = 1L}};
+      thbr = ExprStm {expr = Some (Assignment {lvl = Var t; rhs = Lval (Var y)})};
+      elbro = Some (ExprStm {expr = Some (Assignment {lvl = Var t; rhs = Lval (Var z)})});
+    };
+    ReturnStm {ret = Lval (Var t)}
   ]
 
 let print_err e = let _ = Printf.printf "%s\n" (error_to_string e) in ()
@@ -37,5 +62,5 @@ let test_codegen (name, p) =
     let _ = Printf.printf "\n%s\n" (Lib.Ll.string_of_prog llprog) in
     ()
 
-let progs = [prog_1; prog_2; prog_3]
+let progs = [prog_1; prog_2; prog_3; prog_4]
 let _ = List.map test_codegen progs

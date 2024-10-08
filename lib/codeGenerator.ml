@@ -15,6 +15,12 @@ let ll_type_of = function
   | TAst.Bool -> Ll.I1
   | TAst.ErrorType -> raise UnexpectedErrorType
 
+let tast_type_of = function
+  | Ll.Void -> TAst.Void
+  | Ll.I64 -> TAst.Int
+  | Ll.I1 -> TAst.Bool
+  | _ -> TAst.ErrorType
+
 let ptr_operand_of_lval env = function
   | TAst.Var {ident; _} ->
     let TAst.Ident {sym} = ident in
@@ -62,12 +68,11 @@ let rec codegen_expr env expr =
 and codegen_binop env left op right tp =
   let ll_tp = ll_type_of tp in
   let left_buildlets, left_tp, left_op = codegen_expr env left in
-  let _ = assert(left_tp = ll_tp) in
   let right_buildlets, right_tp, right_op = codegen_expr env right in
-  let _ = assert(right_tp = ll_tp) in
+  let _ = assert(left_tp = right_tp) in
   let _, tmp_alias_sym = Env.insert_tmp_reg env in
   let tmp_op = Ll.Id tmp_alias_sym in
-  let binop_insn = get_binop_insn tmp_alias_sym left_op op right_op tp in
+  let binop_insn = get_binop_insn tmp_alias_sym left_op op right_op (tast_type_of right_tp) in
   (left_buildlets @ right_buildlets @ [binop_insn], ll_tp, tmp_op)
 and codegen_assignment env lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
@@ -94,9 +99,36 @@ let rec codegen_statement env stm =
     let asgn_buildlets, asgn_tp, _ = codegen_assignment new_env (TAst.Var {ident = name; tp = tp}) body tp in
     let _ = assert (asgn_tp = ll_type) in
     ([i1] @ asgn_buildlets, new_env)
-  | TAst.ExprStm {expr} -> raise Unimplemented
-  | TAst.IfThenElseStm {cond; thbr; elbro} -> raise Unimplemented
-  | TAst.CompoundStm {stms} -> raise Unimplemented
+  | TAst.ExprStm {expr} ->
+    begin match expr with
+    | None -> ([], env)
+    | Some e ->
+      let buildlets, _, _ = codegen_expr env e in
+      (buildlets, env)
+    end
+  | TAst.IfThenElseStm {cond; thbr; elbro} ->
+    let cond_buildlets, cond_tp, cond_op = codegen_expr env cond in
+    let _ = assert(cond_tp = Ll.I1) in
+    let _, tmp_thbr_sym = Env.insert_label env in
+    let _, tmp_elbro_sym = Env.insert_label env in
+    let _, tmp_merge_sym = Env.insert_label env in
+    let term_blk_cond = CfgBuilder.term_block(Ll.Cbr (cond_op, tmp_thbr_sym, tmp_elbro_sym)) in
+    let start_blk_then = CfgBuilder.start_block(tmp_thbr_sym) in
+    let buildlets_blk_then, _ = codegen_statement env thbr in
+    let term_blk_then = CfgBuilder.term_block(Ll.Br (tmp_merge_sym)) in
+    let start_blk_else = CfgBuilder.start_block(tmp_elbro_sym) in
+    let buildlets_blk_elbro = 
+      begin match elbro with
+      | None -> []
+      | Some e -> 
+        let buildlets, _ = codegen_statement env e in buildlets
+      end in
+    let term_blk_elbro = CfgBuilder.term_block(Ll.Br (tmp_merge_sym)) in
+    let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
+    (cond_buildlets @ [term_blk_cond] @ [start_blk_then] @ buildlets_blk_then @ [term_blk_then] @ [start_blk_else] @ buildlets_blk_elbro @ [term_blk_elbro] @ [start_blk_merge], env)
+  | TAst.CompoundStm {stms} ->
+    let buildlets, _ = codegen_statement_seq env stms in
+    (buildlets, env)
   | TAst.ReturnStm {ret} ->
     let buildlets, ret_tp, ret_operand = codegen_expr env ret in
     let tr = CfgBuilder.term_block (Ll.Ret (ret_tp, Some ret_operand)) in
