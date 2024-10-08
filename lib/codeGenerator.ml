@@ -14,9 +14,11 @@ let ll_type_of = function
   | TAst.Bool -> Ll.I1
   | TAst.ErrorType -> raise UnexpectedErrorType
 
-let ptr_operand_of_lval = function
-  | TAst.Var {ident; tp} ->
-      match ident with TAst.Ident {sym} -> Ll.Id sym
+let ptr_operand_of_lval env = function
+  | TAst.Var {ident; _} ->
+    let TAst.Ident {sym} = ident in
+    let lval_sym = Env.lookup env sym in
+    Ll.Id lval_sym
 
 let rec codegen_expr env expr =
   match expr with
@@ -31,13 +33,13 @@ and codegen_binop env left op right tp = raise Unimplemented
 and codegen_assignment env lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
   let _ = assert (rhs_tp = ll_type_of tp) in
-  let lvl_op = ptr_operand_of_lval lvl in
+  let lvl_op = ptr_operand_of_lval env lvl in
   let insn = CfgBuilder.add_insn (None, Ll.Store(rhs_tp, rhs_op, lvl_op)) in
   (rhs_buildlets @ [insn], rhs_tp, rhs_op)
 and codegen_lval env lvl =
   match lvl with
   | TAst.Var {ident; tp}->
-    let lvl_op = ptr_operand_of_lval lvl in
+    let lvl_op = ptr_operand_of_lval env lvl in
     let ll_typ = ll_type_of tp in
     let tmp_sym = Env.insert_tmp_reg env in
     let insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Load(ll_typ, lvl_op)) in
