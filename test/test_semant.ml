@@ -8,11 +8,23 @@ type test_case = string * Lib.Ast.program
 
 let prog_1: test_case = "prog_1: Empty program" , []
 let prog_2: test_case = "prog_2: Return bool", [ReturnStm {ret = Boolean {bool = true}}]
-let prog_3: test_case = "prog_3: ",
+let prog_3: test_case = "prog_3: 0L + false", 
   [
     ExprStm {expr = Some (BinOp {left = Integer {int = 0L}; op = Plus; right = Boolean {bool = false}})};
     ReturnStm {ret = Lval (Var (Ident {name = "x"}))}
   ]
+let prog_4: test_case = "prog_4: Return x", 
+  [
+    VarDeclStm {name = Ident {name = "x"}; tp = None; body =Integer {int = 1L}};
+    ExprStm {expr = Some (BinOp {left = Integer {int = 0L}; op = Plus; right = Boolean {bool = false}})};
+    ReturnStm {ret = Lval (Var (Ident {name = "x"}))}
+  ]
+let prog_5: test_case = "prog_5: Return x", 
+  [
+    VarDeclStm {name = Ident {name = "x"}; tp = None; body =Integer {int = 1L}};
+    ReturnStm {ret = Lval (Var (Ident {name = "x"}))}
+  ]
+
 
 let print_err e = let _ = Printf.printf "%s\n" (error_to_string e) in ()
 let test_semant (name, p) =
@@ -26,5 +38,5 @@ let test_semant (name, p) =
   let _ = List.map print_err !errors in
   let _ = Printf.printf "\n" in ()
 
-let progs = [prog_1; prog_2; prog_3]
+let progs = [prog_4; prog_5; prog_1; prog_2; prog_3]
 let _ = List.map test_semant progs

@@ -5,7 +5,7 @@ module TPretty = TypedPretty
 
 type error =
 | TypeMismatch of {expected : TAst.typ; actual : TAst.typ}
-| ShouldBeCallOrAssignment of {expr : Ast.expr}
+| ShouldBeCallOrAssignment of {expr : TAst.expr}
 | NoReturn of {sta : TAst.statement option}
 | LValueNotFound of {sym: Sym.symbol}
 | LValueInvalid of {sym: Sym.symbol}
@@ -23,5 +23,7 @@ let error_to_string err =
   | FunctionUndeclared {sym; _} -> Printf.sprintf "Undeclared function %s." (Sym.name sym)
   | FunctionNameInvalid {sym; _} -> Printf.sprintf "Expect function name, but %s is a var name." (Sym.name sym)
   | FunctionParamCountMismatch{sym; expected; actual; _} -> Printf.sprintf "Function %s expects %d params, but is given %d params." (Sym.name sym) expected actual
-  | ShouldBeCallOrAssignment {expr} -> Printf.sprintf "Expression Statement must be either Call or Assignment"
+  | ShouldBeCallOrAssignment {expr} -> 
+    let _ = PrintBox_text.output stdout (TPretty.expr_to_tree expr) in
+    Printf.sprintf "Expression Statement must be either Call or Assignment"
   | NoReturn {sta} -> Printf.sprintf "Program has no return."

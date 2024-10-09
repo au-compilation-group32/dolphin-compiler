@@ -178,16 +178,16 @@ let rec typecheck_statement env stm =
   | Ast.ExprStm {expr : Ast.expr option} -> 
     begin match expr with 
     | Some e ->
+      let (b, _) = infertype_expr env e in
       let _ = 
         begin match e with
         | Ast.Assignment {lvl; rhs} -> e
         | Ast.Call {fname; args} -> e 
         | _ -> 
-          let err = Errors.ShouldBeCallOrAssignment {expr = e} in 
+          let err = Errors.ShouldBeCallOrAssignment {expr = b} in 
           let _ = Env.insert_error env err in e
           end
       in
-      let (b, _) = infertype_expr env e in
       let b2 : TAst.expr option = Some b in 
       let x = TAst.ExprStm {expr=b2} in (x, env)
     | None -> 
