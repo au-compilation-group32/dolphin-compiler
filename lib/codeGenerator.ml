@@ -6,6 +6,7 @@ module Env = LlvmEnv
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedErrorType
 exception UnexpectedVoidType
+exception UnexpectedOperator
 
 let string_of_sym (name, i) = name ^ (string_of_int i)
 
@@ -56,6 +57,29 @@ let get_binop_insn res_op left_op op right_op op_tp =
     | TAst.ErrorType -> raise UnexpectedErrorType
     end
 
+let get_short_circuit_insns env res_op left_buildlets left_op op right_buildlets right_op op_tp = 
+  match op with
+  | TAst.Lor | TAst.Land ->
+    let _, left_label_sym = Env.insert_label env in
+    let _, right_label_sym = Env.insert_label env in
+    let _, merge_label_sym = Env.insert_label env in
+    let term_curr_blk = CfgBuilder.term_block(Ll.Br(left_label_sym)) in
+    let start_blk_left = CfgBuilder.start_block(left_label_sym) in
+    let _, tmp_icmp_sym = Env.insert_tmp_reg env in
+    let tmp_icmp_op = Ll.Id tmp_icmp_sym in
+    let icmp_insn = 
+      if op = TAst.Lor then CfgBuilder.add_insn(Some tmp_icmp_sym, Ll.Icmp(Ll.Eq, Ll.I1, left_op, Ll.BConst true)) 
+      else if op = TAst.Land then CfgBuilder.add_insn(Some tmp_icmp_sym, Ll.Icmp(Ll.Eq, Ll.I1, left_op, Ll.BConst false)) 
+      else raise UnexpectedOperator
+    in
+    let term_blk_left = CfgBuilder.term_block(Ll.Cbr (tmp_icmp_op, merge_label_sym, right_label_sym)) in
+    let start_blk_right = CfgBuilder.start_block(right_label_sym) in
+    let term_blk_right = CfgBuilder.term_block(Ll.Br(merge_label_sym)) in
+    let start_merge_blk = CfgBuilder.start_block(merge_label_sym) in
+    let phi_insn = CfgBuilder.add_insn(Some res_op, Ll.PhiNode(ll_type_of op_tp, [(left_op, left_label_sym); (right_op, right_label_sym)])) in
+    [term_curr_blk; start_blk_left] @ left_buildlets @ [icmp_insn; term_blk_left; start_blk_right] @ right_buildlets @ [term_blk_right; start_merge_blk; phi_insn] 
+  | TAst.Plus | TAst.Minus | TAst.Mul | TAst.Div | TAst.Rem | TAst.Gt | TAst.Ge | TAst.Lt | TAst.Le | TAst.Eq | TAst.NEq -> raise UnexpectedOperator
+
 let rec codegen_expr env expr =
   match expr with
   | TAst.Integer {int} -> ([],Ll.I64, Ll.IConst64 int)
@@ -72,8 +96,13 @@ and codegen_binop env left op right tp =
   let _ = assert(left_tp = right_tp) in
   let _, tmp_alias_sym = Env.insert_tmp_reg env in
   let tmp_op = Ll.Id tmp_alias_sym in
-  let binop_insn = get_binop_insn tmp_alias_sym left_op op right_op (tast_type_of right_tp) in
-  (left_buildlets @ right_buildlets @ [binop_insn], ll_tp, tmp_op)
+  let final_buildlets = begin match op with
+  | TAst.Lor | TAst.Land -> get_short_circuit_insns env tmp_alias_sym left_buildlets left_op op right_buildlets right_op tp
+  | TAst.Plus | TAst.Minus | TAst.Mul | TAst.Div | TAst.Rem | TAst.Gt | TAst.Ge | TAst.Lt | TAst.Le | TAst.Eq | TAst.NEq ->
+    let binop_insn = get_binop_insn tmp_alias_sym left_op op right_op (tast_type_of right_tp) in
+    left_buildlets @right_buildlets @ [binop_insn]
+  end in
+  (final_buildlets, ll_tp, tmp_op)
 and codegen_unop env op operand tp =
   let ll_tp = ll_type_of tp in
   let op_buildlets, op_tp, res_op = codegen_expr env operand in
