@@ -76,7 +76,11 @@ let get_short_circuit_insns env res_op left_buildlets left_op op right_buildlets
     let start_blk_right = CfgBuilder.start_block(right_label_sym) in
     let term_blk_right = CfgBuilder.term_block(Ll.Br(merge_label_sym)) in
     let start_merge_blk = CfgBuilder.start_block(merge_label_sym) in
-    let phi_insn = CfgBuilder.add_insn(Some res_op, Ll.PhiNode(ll_type_of op_tp, [(left_op, left_label_sym); (right_op, right_label_sym)])) in
+    let phi_insn = 
+      if op = TAst.Lor then CfgBuilder.add_insn(Some res_op, Ll.PhiNode(ll_type_of op_tp, [(Ll.BConst true, left_label_sym); (right_op, right_label_sym)]))
+      else if op = TAst.Land then CfgBuilder.add_insn(Some res_op, Ll.PhiNode(ll_type_of op_tp, [(Ll.BConst false, left_label_sym); (right_op, right_label_sym)]))
+      else raise UnexpectedOperator
+    in
     [term_curr_blk; start_blk_left] @ left_buildlets @ [icmp_insn; term_blk_left; start_blk_right] @ right_buildlets @ [term_blk_right; start_merge_blk; phi_insn] 
   | TAst.Plus | TAst.Minus | TAst.Mul | TAst.Div | TAst.Rem | TAst.Gt | TAst.Ge | TAst.Lt | TAst.Le | TAst.Eq | TAst.NEq -> raise UnexpectedOperator
 
