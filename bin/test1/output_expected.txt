@@ -1,9 +1,7 @@
-Please enter an integer: 3
-3
-6
-2
+Please enter an integer: 100
 3
 3
 6
-6
-return 6
+100
+100
+return 100

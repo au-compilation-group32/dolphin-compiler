@@ -8,10 +8,19 @@ module Pretty = Pretty
 type test_case = string * string * Ast.program
 let print_integer = Ident {name = "print_integer"}
 let read_integer = Ident {name = "read_integer"}
-let x = Ident {name = "x"}
-let y = Ident {name = "y"}
-let z = Ident {name = "z"}
-let t = Ident {name = "t"}
+let int_x = Ident {name = "int_x"}
+let int_y = Ident {name = "int_y"}
+let int_z = Ident {name = "int_z"}
+let int_t = Ident {name = "int_t"}
+let int_u = Ident {name = "int_u"}
+let int_v = Ident {name = "int_v"}
+let int_p = Ident {name = "int_p"}
+let int_q = Ident {name = "int_q"}
+
+let bool_a = Ident {name = "bool_a"}
+let bool_b = Ident {name = "bool_b"}
+let bool_c = Ident {name = "bool_c"}
+let bool_d = Ident {name = "bool_d"}
 
 let sprint_err e = Printf.sprintf "%s" (error_to_string e)
 let sprint_err_list el = List.fold_left ( ^ ) "" (List.map sprint_err el)
