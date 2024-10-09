@@ -141,7 +141,27 @@ let rec typecheck_statement env stm =
     in
     let x : TAst.statement = TAst.ReturnStm {ret=b} in (x, env)
   | Ast.VarDeclStm {name : Ast.ident; tp : Ast.typ option; body : Ast.expr} -> 
-    let (b, t) = infertype_expr env body in
+    let decl_sym = let Ast.Ident{name = s} = name in Sym.symbol s in
+    let typed_body, body_tp = infertype_expr env body in
+    let _ = if body_tp = TAst.Void then 
+      let _ = Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym}) in body_tp else body_tp in
+    let stm_tp = match tp with
+    | None -> if body_tp = TAst.Void then TAst.ErrorType else body_tp
+    | Some t -> 
+      let decl_tp = typecheck_typ t in
+      if decl_tp = TAst.Void 
+      then 
+        let _ = Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym}) in
+        body_tp 
+      else if decl_tp <> body_tp && body_tp <> TAst.ErrorType && body_tp <> TAst.Void
+      then 
+        let _ = Env.insert_error env (Errors.TypeMismatch{expected = decl_tp; actual = body_tp}) in
+        decl_tp 
+      else decl_tp
+    in
+    let new_env = Env.insert_local_decl env decl_sym stm_tp in
+    (TAst.VarDeclStm {name = TAst.Ident {sym = decl_sym}; tp = stm_tp; body = typed_body}, new_env) 
+    (* let (b, t) = infertype_expr env body in
     let tpNew = 
       begin match tp with
       | None -> None
@@ -164,7 +184,7 @@ let rec typecheck_statement env stm =
     let sy : Sym.symbol = Sym.symbol na in
     let n : TAst.ident = TAst.Ident {sym=sy} in
     let new_env = Env.insert_local_decl env sy t in
-    let x : TAst.statement = TAst.VarDeclStm {name = n; tp= t; body=b} in (x, new_env)
+    let x : TAst.statement = TAst.VarDeclStm {name = n; tp= t; body=b} in (x, new_env) *)
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
     let (b, t) = infertype_expr env cond in 
     let _ = 
