@@ -81,6 +81,49 @@ let prog_6: test_case = "prog_6: CompoundStm ",
     CompoundStm{stms = lst};
     ReturnStm {ret = Lval (Var x)}
   ]
+let prog_7: test_case = "prog_7: ExprStm None", 
+  [
+    VarDeclStm {name = Ident {name = "x"}; tp = None; body =Integer {int = 1L}};
+    ExprStm {expr = None};
+    ReturnStm {ret = Lval (Var (Ident {name = "x"}))}
+  ]
+let prog_8: test_case = "prog_8: CompoundStm change x", 
+let read_integer = Ident {name = "read_integer"} in
+let x = Ident {name = "x"} in
+let t = Ident {name = "t"} in
+let lst: statement list = [] in
+let arg2 = VarDeclStm {name = t; tp = None; body = Call {fname = read_integer; args = []}} in
+let arg3 = 
+  IfThenElseStm {
+    cond = BinOp {left = Lval (Var x); op = Eq; right = Integer {int = 1L}};
+    thbr = ExprStm {expr = Some (Assignment {lvl = Var t; rhs = Lval (Var x)})};
+    elbro = None;
+  } 
+in
+let lst = arg3 :: lst in
+let lst = arg2 :: lst in
+[
+  VarDeclStm {name = x; tp = None; body =Integer {int = 3L}};
+  CompoundStm{stms = lst};
+  ReturnStm {ret = Lval (Var x)}
+]
+let prog_9: test_case = "prog_9: Change x", 
+  [
+    VarDeclStm {name = Ident {name = "x"}; tp = None; body =Integer {int = 1L}};
+    VarDeclStm {name = Ident {name = "x"}; tp = None; body =Integer {int = 5L}};
+    ReturnStm {ret = Lval (Var (Ident {name = "x"}))}
+  ]
+let prog_10: test_case = "prog_10: Return x", 
+  let x = Ident {name = "x"} in
+  [
+    VarDeclStm {name = x; tp = None; body =Integer {int = 1L}};
+    IfThenElseStm {
+      cond = BinOp {left = Lval (Var x); op = Eq; right = Integer {int = 1L}};
+      thbr = ExprStm {expr = Some (Assignment {lvl = Var x; rhs = UnOp {op = Lnot; operand =Lval (Var x)}})};
+      elbro = None;
+    };
+    ReturnStm {ret = Lval (Var x)}
+  ]
 
 let print_err e = let _ = Printf.printf "%s\n" (error_to_string e) in ()
 let test_codegen (name, p) =
@@ -100,5 +143,5 @@ let test_codegen (name, p) =
     let _ = Printf.printf "\n%s\n" (Lib.Ll.string_of_prog llprog) in
     ()
 
-let progs = [prog_1; prog_2; prog_3; prog_4; prog_5; prog_6]
+let progs = [prog_1; prog_2; prog_3; prog_4; prog_5; prog_6; prog_7; prog_8; prog_9; prog_10]
 let _ = List.map test_codegen progs
