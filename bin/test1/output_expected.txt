@@ -1,0 +1,9 @@
+Please enter an integer: 3
+3
+6
+2
+3
+3
+6
+6
+return 6
