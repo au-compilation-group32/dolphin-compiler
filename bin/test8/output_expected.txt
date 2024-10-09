@@ -1,0 +1,24 @@
+Please enter an integer: 100
+Please enter an integer: 69
+Please enter an integer: 419
+Please enter an integer: 690
+69
+102
+Please enter an integer: 691
+102
+Please enter an integer: 692
+Please enter an integer: 4190
+100
+692
+4190
+200
+693
+4190
+Please enter an integer: 4191
+200
+693
+4191
+200
+102
+419
+return 200

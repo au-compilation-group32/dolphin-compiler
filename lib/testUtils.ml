@@ -22,8 +22,8 @@ let bool_b = Ident {name = "bool_b"}
 let bool_c = Ident {name = "bool_c"}
 let bool_d = Ident {name = "bool_d"}
 
-let sprint_err e = Printf.sprintf "%s" (error_to_string e)
-let sprint_err_list el = List.fold_left ( ^ ) "" (List.map sprint_err el)
+let sprint_err e = Printf.sprintf "%s\n" (error_to_string e)
+let sprint_err_list el = List.fold_left ( ^ ) "" (List.rev(List.map sprint_err el))
 
 let run_testcase (name, desc, p) =
   let tprog, errors = typecheck_prog p in
