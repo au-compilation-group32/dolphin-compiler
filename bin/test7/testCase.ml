@@ -1,7 +1,7 @@
 open Lib.TestUtils
 open Lib.Ast
 
-let test1: test_case = 
+let test7: test_case = 
   "test7",
   "negative scope test",
   [
@@ -107,4 +107,4 @@ let test1: test_case =
     ReturnStm {ret = Lval (Var int_x)}
   ]
 
-let _ = run_testcase test1
+let _ = run_testcase test7
