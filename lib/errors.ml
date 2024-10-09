@@ -13,6 +13,7 @@ type error =
 | FunctionNameInvalid of {sym: Sym.symbol}
 | FunctionParamCountMismatch of {sym: Sym.symbol; expected: int; actual: int}
 | InvalidVoidType of {sym: Sym.symbol}
+| InvalidVoidTypeOperand of {expr : Ast.expr}
 (* other errors to be added as needed. *)
 
 (* Useful for printing errors *)
@@ -27,3 +28,4 @@ let error_to_string err =
   | ShouldBeCallOrAssignment {expr} -> Printf.sprintf "Expression Statement must be either Call or Assignment"
   | NoReturn {sta} -> Printf.sprintf "Program has no return."
   | InvalidVoidType {sym; _} -> Printf.sprintf "Identifier %s has invalid type void." (Sym.name sym)
+  | InvalidVoidTypeOperand {expr; _} -> Printf.sprintf "Operand has invalid type void."
