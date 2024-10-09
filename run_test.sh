@@ -5,7 +5,7 @@ test_name=$1
 dune exec bin/$test_name/testCase.exe
 
 if [ $? -ne 0 ]; then
-    echo "Semantics analysis failed"
+    echo "Semantics analysis failed, comparing error lists:"
     diff bin/$test_name/output_actual.txt bin/$test_name/output_expected.txt
 else
     echo "Semantics analysis success, compile and run"

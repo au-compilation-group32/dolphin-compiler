@@ -1,0 +1,6 @@
+Please enter an integer: 100
+Please enter an integer: 69
+-100
+-100
+100
+return 0

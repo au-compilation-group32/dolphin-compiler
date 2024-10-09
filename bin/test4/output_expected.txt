@@ -1,0 +1,15 @@
+Please enter an integer: 100
+Please enter an integer: 69
+Please enter an integer: 419
+Please enter an integer: 10
+169
+31
+-319
+6900
+1
+31
+0
+100
+10
+0
+return 0
