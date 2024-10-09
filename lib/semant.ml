@@ -25,6 +25,10 @@ let typecheck_binop = function
 | Ast.Eq-> TAst.Eq
 | Ast.NEq -> TAst.NEq
 
+let typecheck_unop = function
+| Ast.Neg -> TAst.Neg
+| Ast.Lnot -> TAst.Lnot
+
 let get_expected_binop_arg_typ = function 
   | Plus | Minus | Mul | Div | Rem -> TAst.Int
   | Lt | Le | Gt | Ge -> TAst.Int
@@ -53,7 +57,8 @@ let rec infertype_expr env expr =
       else 
         let err = Errors.TypeMismatch {expected = t; actual = un} in 
         let _ = Env.insert_error env err in t
-    in (b, final_type)
+    in let typed_unop = TAst.UnOp {op = typecheck_unop op; operand = b; tp = final_type}
+    in (typed_unop, final_type)
   | Ast.Lval lvl -> infertype_lval env lvl
   | Ast.Assignment {lvl; rhs} -> infertype_assignment env lvl rhs
   | Ast.Call {fname; args} -> infertype_call env fname args
