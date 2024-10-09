@@ -3,4 +3,3 @@ Identifier int_y has invalid type void.
 Identifier int_y has invalid type void.
 Operand has invalid type void.
 Type mismatch: expected int but found bool.
-Type mismatch: expected int but found bool.
