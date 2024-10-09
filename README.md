@@ -9,5 +9,11 @@ opam install printbox printbox-text
 ## Run test:
 
 ```
-dune exec test/test_semant.exe
+bash run_test.sh <test_name>
+```
+
+For example
+
+```
+bash run_test.sh test1
 ```
