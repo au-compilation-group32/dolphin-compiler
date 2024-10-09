@@ -1,0 +1,9 @@
+LValue int_y not found.
+LValue int_y not found.
+LValue int_y not found.
+LValue int_z not found.
+Type mismatch: expected int but found bool.
+LValue int_z not found.
+Type mismatch: expected int but found bool.
+LValue int_y not found.
+LValue int_z not found.
