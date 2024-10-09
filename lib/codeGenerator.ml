@@ -61,10 +61,10 @@ let rec codegen_expr env expr =
   | TAst.Integer {int} -> ([],Ll.I64, Ll.IConst64 int)
   | TAst.Boolean {bool} -> ([], Ll.I1, Ll.BConst bool)
   | TAst.BinOp {left; op; right; tp} -> codegen_binop env left op right tp
-  | TAst.UnOp {op; operand; tp} -> raise Unimplemented
+  | TAst.UnOp {op; operand; tp} -> codegen_unop env op operand tp
   | TAst.Lval lvl ->  codegen_lval env lvl
   | TAst.Assignment {lvl; rhs; tp} -> codegen_assignment env lvl rhs tp
-  | TAst.Call {fname; args; tp} ->  raise Unimplemented
+  | TAst.Call {fname; args; tp} ->  codegen_call env fname args tp
 and codegen_binop env left op right tp =
   let ll_tp = ll_type_of tp in
   let left_buildlets, left_tp, left_op = codegen_expr env left in
@@ -74,6 +74,17 @@ and codegen_binop env left op right tp =
   let tmp_op = Ll.Id tmp_alias_sym in
   let binop_insn = get_binop_insn tmp_alias_sym left_op op right_op (tast_type_of right_tp) in
   (left_buildlets @ right_buildlets @ [binop_insn], ll_tp, tmp_op)
+and codegen_unop env op operand tp =
+  let ll_tp = ll_type_of tp in
+  let op_buildlets, op_tp, res_op = codegen_expr env operand in
+  let _ = assert(ll_tp = op_tp) in
+  let _, tmp_alias_sym = Env.insert_tmp_reg env in
+  let tmp_op = Ll.Id tmp_alias_sym in
+  let insn = begin match op with
+    | TAst.Lnot -> CfgBuilder.add_insn(Some tmp_alias_sym, Ll.Binop(Ll.Xor, Ll.I1, Ll.BConst true, res_op))
+    | TAst.Neg -> CfgBuilder.add_insn(Some tmp_alias_sym, Ll.Binop(Ll.Sub, Ll.I64, Ll.IConst64 0L, res_op))
+    end in
+  (op_buildlets @ [insn], ll_tp, tmp_op)
 and codegen_assignment env lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
   let _ = assert (rhs_tp = ll_type_of tp) in
@@ -88,6 +99,22 @@ and codegen_lval env lvl =
     let _, tmp_alias_sym = Env.insert_tmp_reg env in
     let insn = CfgBuilder.add_insn (Some tmp_alias_sym, Ll.Load(ll_typ, lvl_op)) in
     ([insn], ll_typ, Ll.Id tmp_alias_sym)
+and codegen_call env fname args tp =
+  let TAst.Ident {sym = fsym} = fname in
+  let ll_ret_tp = ll_type_of tp in
+  let args_code = List.map (codegen_expr env) args in
+  let get_buildlet (b, _, _) = b in
+  let args_buildlets = List.map get_buildlet args_code in 
+  let folded_buildlets = List.fold_left ( @ ) [] args_buildlets in
+  let get_args_op (_, t, o) = (t, o) in
+  let args_ops = List.map get_args_op args_code in
+  let ret_op = match tp with
+    | TAst.Int | TAst.Bool -> let _, tmp_alias_sym = Env.insert_tmp_reg env in tmp_alias_sym
+    | TAst.Void | TAst.ErrorType -> Sym.symbol "dummy"
+  in let call_insn = match tp with
+    | TAst.Int | TAst.Bool -> CfgBuilder.add_insn (Some ret_op, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
+    | TAst.Void | TAst.ErrorType -> CfgBuilder.add_insn (None, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
+  in (folded_buildlets @ [call_insn], ll_ret_tp, Ll.Id ret_op)
 
 let rec codegen_statement env stm =
   match stm with
