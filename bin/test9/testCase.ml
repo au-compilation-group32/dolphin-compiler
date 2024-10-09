@@ -10,6 +10,8 @@ let test9: test_case =
     VarDeclStm {name = int_y; tp = None; body = Call {fname = print_integer; args = [Lval(Var int_x)]}};
     VarDeclStm {name = int_y; tp = Some Int; body = Call {fname = print_integer; args = [Lval(Var int_x)]}};
 
+    ExprStm {expr = Some (Assignment {lvl = Var int_x; rhs = BinOp{left = Call {fname = print_integer; args = [Lval(Var int_x)]}; op = Eq; right = Lval(Var int_x)}})};
+
     ReturnStm {ret = Boolean {bool = true}}
   ]
 

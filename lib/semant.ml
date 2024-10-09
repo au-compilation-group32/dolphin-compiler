@@ -72,7 +72,12 @@ and infertype_binop env left op right =
       (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = expected_res_typ}, expected_res_typ)
     | Eq | NEq ->
       let right_texpr, right_tp = infertype_expr env right in
-      let left_texpr = typecheck_expr env left right_tp in
+      let left_texpr, left_tp = infertype_expr env left in
+      let _ = if right_tp = TAst.Void
+        then let _ = Env.insert_error env (Errors.InvalidVoidTypeOperand{expr = right}) in ()
+      else if left_tp = TAst.Void 
+        then let _ = Env.insert_error env (Errors.InvalidVoidTypeOperand{expr = left}) in ()
+      else () in
       (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = TAst.Bool}, TAst.Bool)
 and infertype_assignment env lvl rhs =
   let _ , lvl_tp = infertype_lval env lvl in
