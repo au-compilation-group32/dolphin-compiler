@@ -166,30 +166,6 @@ let rec typecheck_statement env stm =
     in
     let new_env = Env.insert_local_decl env decl_sym stm_tp in
     (TAst.VarDeclStm {name = TAst.Ident {sym = decl_sym}; tp = stm_tp; body = typed_body}, new_env) 
-    (* let (b, t) = infertype_expr env body in
-    let tpNew = 
-      begin match tp with
-      | None -> None
-      | Some ts -> 
-        let tsNew = typecheck_typ ts in
-        Some tsNew
-        end
-    in
-    let _ : TAst.typ = 
-      begin match tpNew with
-      | None -> t
-      | Some ts ->
-        if t = ts then t
-        else 
-          let err = Errors.TypeMismatch {expected = t; actual = ts} in 
-          let _ = Env.insert_error env err in t
-        end
-    in
-    let na : string = match name with Ast.Ident{name} -> name in
-    let sy : Sym.symbol = Sym.symbol na in
-    let n : TAst.ident = TAst.Ident {sym=sy} in
-    let new_env = Env.insert_local_decl env sy t in
-    let x : TAst.statement = TAst.VarDeclStm {name = n; tp= t; body=b} in (x, new_env) *)
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
     let (b, t) = infertype_expr env cond in 
     let _ = 
@@ -226,13 +202,6 @@ let rec typecheck_statement env stm =
     end
   | Ast.CompoundStm {stms : Ast.statement list} -> 
     let tstmt_list, _ = typecheck_statement_seq env stms in
-    (* let envTempItems = Env.(env.idents) in
-    let envTempErr = Env.(env.errors) in
-    let envTemp : Env.environment = {idents = envTempItems; errors = envTempErr} in
-    let sL elem = 
-      typecheck_statement envTemp elem 
-    in
-    let newList = List.map sL stms in  *)
     let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, env)
 (* should use typecheck_statement to check the block of statements. *)
 and typecheck_statement_seq env stms =
