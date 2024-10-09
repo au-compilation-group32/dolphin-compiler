@@ -113,13 +113,13 @@ let prog_9: test_case = "prog_9: Change x",
     VarDeclStm {name = Ident {name = "x"}; tp = None; body =Integer {int = 5L}};
     ReturnStm {ret = Lval (Var (Ident {name = "x"}))}
   ]
-let prog_10: test_case = "prog_10: Return x", 
+let prog_10: test_case = "prog_10: UnOp", 
   let x = Ident {name = "x"} in
   [
     VarDeclStm {name = x; tp = None; body =Integer {int = 1L}};
     IfThenElseStm {
       cond = BinOp {left = Lval (Var x); op = Eq; right = Integer {int = 1L}};
-      thbr = ExprStm {expr = Some (Assignment {lvl = Var x; rhs = UnOp {op = Lnot; operand =Lval (Var x)}})};
+      thbr = ExprStm {expr = Some (Assignment {lvl = Var x; rhs = UnOp {op = Neg; operand =Integer {int = 3L}}})};
       elbro = None;
     };
     ReturnStm {ret = Lval (Var x)}
