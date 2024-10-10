@@ -4,10 +4,16 @@ open Lib.Ast
 let test6: test_case = 
   "test6",
   "test unop",
+  let delc11 = Declaration {name = int_x; tp = None; body = Call {fname = read_integer; args = []}} in
+  let delc_block1 = [delc11] in
+  let declar_block1 : declaration_block = DeclBlock delc_block1 in
+  let delc21 = Declaration {name = int_y; tp = None; body = Call {fname = read_integer; args = []}} in
+  let delc_block2 = [delc21] in
+  let declar_block2 : declaration_block = DeclBlock delc_block2 in
   [
-    VarDeclStm {name = int_x; tp = None; body = Call {fname = read_integer; args = []}};
+    VarDeclStm declar_block1;
     ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_x)]})};
-    VarDeclStm {name = int_y; tp = None; body = Call {fname = read_integer; args = []}};
+    VarDeclStm declar_block2;
     ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_y)]})};
 
     ExprStm {expr = Some (Call {fname = print_integer; args = [UnOp{op = Neg; operand = Lval(Var int_x)}]})};
