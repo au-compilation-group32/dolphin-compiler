@@ -168,7 +168,6 @@ let typecheck_var_delc env var = match var with
     let ds, e2 = typecheck_var_delcs e1 t in
     (d::ds, e2)
 
-
 (* should check the validity of a statement and produce the corresponding typed statement. Should use typecheck_expr and/or infertype_expr as necessary. *)
 let rec typecheck_statement env stm =
   match stm with
@@ -181,7 +180,6 @@ let rec typecheck_statement env stm =
         let _ = Env.insert_error env err in t
     in
     let x : TAst.statement = TAst.ReturnStm {ret=b} in (x, env)
-  
   | BreakStm -> raise Unimplemented
   | ContinueStm -> raise Unimplemented
   | WhileStm {cond : expr; body : statement} -> raise Unimplemented
@@ -192,10 +190,6 @@ let rec typecheck_statement env stm =
       let dlst, e =typecheck_var_delcs env h in 
       let decl = TAst.DeclBlock dlst in
       TAst.VarDeclStm decl, e
-      (*raise Unimplemented
-      let trying elem = typecheck_var_delc env elem in
-      let (d: TAst.single_declaration list, e: Env.environment) = List.map trying h in 
-      TAst.VarDeclStm declaration_block DeclBlock d, env*)
       end
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
     let (b, t) = infertype_expr env cond in 
