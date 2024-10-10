@@ -5,6 +5,7 @@ module Env = Env
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnreachableControlFlow
+exception UnexpectedErrorType
 
 let typecheck_typ = function
 | Ast.Int -> TAst.Int
@@ -49,16 +50,7 @@ let rec infertype_expr env expr =
   | Ast.Integer {int} -> (TAst.Integer {int}, TAst.Int)
   | Ast.Boolean {bool} -> (TAst.Boolean {bool}, TAst.Bool)
   | Ast.BinOp {left; op; right} -> infertype_binop env left op right
-  | Ast.UnOp {op; operand} -> (*infertype_expr env operand*)
-    let (b, t) = infertype_expr env operand in 
-    let un = get_expected_unop_arg_typ op in
-    let final_type : TAst.typ = 
-      if t = un then t
-      else 
-        let err = Errors.TypeMismatch {expected = t; actual = un} in 
-        let _ = Env.insert_error env err in t
-    in let typed_unop = TAst.UnOp {op = typecheck_unop op; operand = b; tp = final_type}
-    in (typed_unop, final_type)
+  | Ast.UnOp {op; operand} -> infertype_unop env op operand
   | Ast.Lval lvl -> infertype_lval env lvl
   | Ast.Assignment {lvl; rhs} -> infertype_assignment env lvl rhs
   | Ast.Call {fname; args} -> infertype_call env fname args
@@ -73,12 +65,21 @@ and infertype_binop env left op right =
     | Eq | NEq ->
       let right_texpr, right_tp = infertype_expr env right in
       let left_texpr, left_tp = infertype_expr env left in
-      let _ = if right_tp = TAst.Void
-        then let _ = Env.insert_error env (Errors.InvalidVoidTypeOperand{expr = right}) in ()
-      else if left_tp = TAst.Void 
-        then let _ = Env.insert_error env (Errors.InvalidVoidTypeOperand{expr = left}) in ()
-      else () in
+      let _ = 
+        if right_tp = TAst.Void
+        then Env.insert_error env (Errors.InvalidVoidTypeOperand{expr = right})
+        else if left_tp = TAst.Void 
+        then Env.insert_error env (Errors.InvalidVoidTypeOperand{expr = left})
+        else () in
       (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = TAst.Bool}, TAst.Bool)
+and infertype_unop env op operand =
+    let (operand_texpr, operand_tp) = infertype_expr env operand in 
+    let expected_tp = get_expected_unop_arg_typ op in
+    let _ = 
+      if operand_tp <> expected_tp
+      then Env.insert_error env (Errors.TypeMismatch {expected = expected_tp; actual = operand_tp})
+      else () in 
+    (TAst.UnOp {op = typecheck_unop op; operand = operand_texpr; tp = expected_tp}, expected_tp)
 and infertype_assignment env lvl rhs =
   let _ , lvl_tp = infertype_lval env lvl in
   let rhs_texpr, rhs_tp = infertype_expr env rhs in
@@ -138,26 +139,31 @@ let typecheck_var_delc env var = match var with
 | Declaration {name : Ast.ident; tp : Ast.typ option; body : Ast.expr} -> 
   let decl_sym = let Ast.Ident{name = s} = name in Sym.symbol s in
   let typed_body, body_tp = infertype_expr env body in
-  let _ = if body_tp = TAst.Void then 
-    let _ = Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym}) in body_tp else body_tp in
+  let _ = 
+    if body_tp = TAst.Void
+    then Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym})
+    else () in
   let stm_tp = match tp with
   | None -> if body_tp = TAst.Void then TAst.ErrorType else body_tp
   | Some t -> 
     let decl_tp = typecheck_typ t in
-    if decl_tp = TAst.Void 
-    then 
+    match decl_tp with
+    | TAst.Int | TAst.Bool ->
+      let _ =
+        if decl_tp <> body_tp && body_tp <> TAst.ErrorType
+        then Env.insert_error env (Errors.TypeMismatch{expected = decl_tp; actual = body_tp})
+        else () in
+      decl_tp
+    | TAst.Void ->
+      (* This case is unreachable in phase 1, but it can be in later phases where there is a void type in AST*)
       let _ = Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym}) in
-      body_tp 
-    else if decl_tp <> body_tp && body_tp <> TAst.ErrorType && body_tp <> TAst.Void
-    then 
-      let _ = Env.insert_error env (Errors.TypeMismatch{expected = decl_tp; actual = body_tp}) in
-      decl_tp 
-    else decl_tp
+      if body_tp <> TAst.Void then body_tp else TAst.ErrorType
+    | TAst.ErrorType -> raise UnexpectedErrorType
   in
-  let new_env : Env.environment = Env.insert_local_decl env decl_sym stm_tp in
+  let new_env = Env.insert_local_decl env decl_sym stm_tp in
   (TAst.Declaration {name = TAst.Ident {sym = decl_sym}; tp = stm_tp; body = typed_body}, new_env)
 
-  let rec typecheck_var_delcs env vars = 
+let rec typecheck_var_delcs env vars = 
   match vars with
   | [] -> ([],env)
   | h :: t -> 
@@ -169,14 +175,8 @@ let typecheck_var_delc env var = match var with
 let rec typecheck_statement env stm =
   match stm with
   | Ast.ReturnStm {ret : Ast.expr} -> 
-    let (b , t) = infertype_expr env ret in 
-    let _ = 
-      if t = TAst.Int then t
-      else 
-        let err = Errors.TypeMismatch {expected = TAst.Int; actual = t} in 
-        let _ = Env.insert_error env err in t
-    in
-    let x : TAst.statement = TAst.ReturnStm {ret=b} in (x, env)
+    let b = typecheck_expr env ret TAst.Int in 
+    let x = TAst.ReturnStm {ret=b} in (x, env)
   | BreakStm -> raise Unimplemented
   | ContinueStm -> raise Unimplemented
   | WhileStm {cond : expr; body : statement} -> raise Unimplemented
@@ -184,43 +184,31 @@ let rec typecheck_statement env stm =
   | Ast.VarDeclStm declaration_block -> 
     begin match declaration_block with
     | DeclBlock h -> 
-      let dlst, e =typecheck_var_delcs env h in 
+      let dlst, e = typecheck_var_delcs env h in 
       let decl = TAst.DeclBlock dlst in
       TAst.VarDeclStm decl, e
-      end
+    end
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
-    let (b, t) = infertype_expr env cond in 
-    let _ = 
-      if t = TAst.Bool then t
-      else 
-        let err = Errors.TypeMismatch {expected = TAst.Bool; actual = t} in 
-        let _ = Env.insert_error env err in t
-    in
+    let b = typecheck_expr env cond TAst.Bool in 
     let thS, _ = typecheck_statement env thbr in
     begin match elbro with 
     | Some e -> let elS, _ = typecheck_statement env e in
-      let x : TAst.statement = TAst.IfThenElseStm {cond = b; thbr = thS; elbro = Some elS} in (x, env)
-    | None -> let elS : TAst.statement option = None in 
-      let x : TAst.statement = TAst.IfThenElseStm {cond = b; thbr = thS; elbro = elS} in (x, env)
-      end
+      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = Some elS}, env)
+    | None ->
+      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = None}, env)
+    end
   | Ast.ExprStm {expr : Ast.expr option} -> 
     begin match expr with 
     | Some e ->
       let (b, _) = infertype_expr env e in
-      let _ = 
+      let _ =
         begin match e with
-        | Ast.Assignment {lvl; rhs} -> e
-        | Ast.Call {fname; args} -> e 
-        | _ -> 
-          let err = Errors.ShouldBeCallOrAssignment {expr = b} in 
-          let _ = Env.insert_error env err in e
-          end
-      in
-      let b2 : TAst.expr option = Some b in 
-      let x = TAst.ExprStm {expr=b2} in (x, env)
-    | None -> 
-      let n : TAst.expr option = None in 
-      let x = TAst.ExprStm {expr = n} in (x, env)
+          | Ast.Assignment _ | Ast.Call _ -> ()
+          | Ast.Integer _ | Ast.Boolean _ | Ast.BinOp _ | Ast.UnOp _ | Ast.Lval _ -> 
+            Env.insert_error env (Errors.ShouldBeCallOrAssignment {expr = b})
+        end in
+      (TAst.ExprStm {expr=Some b}, env)
+    | None -> (TAst.ExprStm {expr=None}, env)
     end
   | Ast.CompoundStm {stms : Ast.statement list} -> 
     let tstmt_list, _ = typecheck_statement_seq env stms in
@@ -249,8 +237,8 @@ let typecheck_prog prg =
     else
       let x = List.nth tprog (temp-1) in
       begin match x with
-    | TAst.ReturnStm {ret} -> env
-    | _ -> 
+    | TAst.ReturnStm _ -> env
+    | TAst.VarDeclStm _ | TAst.ExprStm _ | TAst.IfThenElseStm _ | TAst.WhileStm _ | TAst.ForStm _ | TAst.ContinueStm | TAst.BreakStm | TAst.CompoundStm _ -> 
       let err = Errors.NoReturn {sta = Some x} in 
       let _ = Env.insert_error env err in env
       end
