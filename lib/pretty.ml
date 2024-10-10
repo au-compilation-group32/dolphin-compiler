@@ -25,7 +25,7 @@ let typ_to_tree tp =
 
 let binop_to_tree op =
   match op with
-  | Plus -> make_keyword_line "Plus"
+  | Plus -> make_keyword_line "PLUS"
   | Minus -> make_keyword_line "Minus"
   | Mul -> make_keyword_line "Mul"
   | Div -> make_keyword_line "Div"
@@ -42,7 +42,7 @@ let binop_to_tree op =
 let unop_to_tree op =
   match op with
   | Neg -> make_keyword_line "Neg"
-  | Lnot -> make_keyword_line "Lnot"
+  | Lnot -> make_keyword_line "Lor"
   
 let rec expr_to_tree e =
   match e with
@@ -60,19 +60,41 @@ and lval_to_tree l =
   match l with
   | Var ident -> PBox.hlist ~bars:false [make_info_node_line "Var("; ident_to_tree ident; make_info_node_line ")"]
 
-let rec statement_to_tree c =
-  match c with
-  | VarDeclStm {name; tp; body} -> PBox.tree (make_keyword_line "VarDeclStm") 
+let single_declaration_to_tree (Declaration {name; tp; body; _}) =
+  PBox.tree (make_keyword_line "Declaration") 
     [PBox.hlist ~bars:false [make_info_node_line "Ident: "; ident_to_tree name]; 
     PBox.hlist ~bars:false [make_info_node_line "Type: "; Option.fold ~none:PBox.empty ~some:typ_to_tree tp];
     PBox.hlist ~bars:false [make_info_node_line "Body: "; expr_to_tree body]]
-  | ExprStm {expr; _} -> PBox.hlist ~bars:false [make_info_node_line "ExprStm: "; Option.fold ~none:PBox.empty ~some:expr_to_tree expr]
-  | IfThenElseStm {cond; thbr; elbro; _} ->
+
+let declaration_block_to_tree (DeclBlock declarations) =
+PBox.tree (make_keyword_line "VarDecl")  (List.map single_declaration_to_tree declarations)
+
+let for_init_to_tree = function
+| FIDecl db -> PBox.hlist ~bars:false [PBox.line "ForInitDecl: "; declaration_block_to_tree db]
+| FIExpr e -> PBox.hlist ~bars:false [PBox.line "ForInitExpr: "; expr_to_tree e]
+
+let rec statement_to_tree c =
+  match c with
+  | VarDeclStm db -> PBox.hlist ~bars:false [PBox.line "DeclStm: "; declaration_block_to_tree db]
+  | ExprStm {expr} -> PBox.hlist ~bars:false [make_info_node_line "ExprStm: "; Option.fold ~none:PBox.empty ~some:expr_to_tree expr]
+  | IfThenElseStm {cond; thbr; elbro} ->
     PBox.tree (make_keyword_line "IfStm")
       ([PBox.hlist ~bars:false [make_info_node_line "Cond: "; expr_to_tree cond]; PBox.hlist ~bars:false [make_info_node_line "Then-Branch: "; statement_to_tree thbr]] @
        match elbro with None -> [] | Some elbr -> [PBox.hlist ~bars:false [make_info_node_line "Else-Branch: "; statement_to_tree elbr]])
-  | CompoundStm {stms; _} -> PBox.tree (make_info_node_line "CompoundStm") (statement_seq_to_forest stms)
-  | ReturnStm {ret; _} -> PBox.hlist ~bars:false [make_keyword_line "ReturnValStm: "; expr_to_tree ret]
+  | WhileStm {cond; body} ->
+    PBox.tree (make_keyword_line "WhileStm") 
+      [PBox.hlist ~bars:false [make_info_node_line "Cond: "; expr_to_tree cond];
+        PBox.hlist ~bars:false [make_info_node_line "Body: "; statement_to_tree body]]
+  | ForStm {init; cond; update; body} ->
+    PBox.tree (make_keyword_line "ForStm") 
+      [PBox.hlist ~bars:false [make_info_node_line "Init: "; Option.fold ~none:PBox.empty ~some:for_init_to_tree init];
+        PBox.hlist ~bars:false [make_info_node_line "Cond: "; Option.fold ~none:PBox.empty ~some:expr_to_tree cond];
+        PBox.hlist ~bars:false [make_info_node_line "Update: "; Option.fold ~none:PBox.empty ~some:expr_to_tree update];
+        PBox.hlist ~bars:false [make_info_node_line "Body: "; statement_to_tree body]]
+  | BreakStm -> make_keyword_line "BreakStm"
+  | ContinueStm -> make_keyword_line "ContinueStm"
+  | CompoundStm {stms} -> PBox.tree (make_info_node_line "CompoundStm") (statement_seq_to_forest stms)
+  | ReturnStm {ret} -> PBox.hlist ~bars:false [make_keyword_line "ReturnValStm: "; expr_to_tree ret]
 and statement_seq_to_forest stms = List.map statement_to_tree stms
 
 let program_to_tree prog = 
