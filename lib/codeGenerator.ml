@@ -149,9 +149,9 @@ and codegen_call env fname args tp =
     | TAst.Void | TAst.ErrorType -> CfgBuilder.add_insn (None, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
   in (folded_buildlets @ [call_insn], ll_ret_tp, Ll.Id ret_op)
 
-let rec codegen_statement env stm =
-  match stm with
-  | TAst.VarDeclStm {name; tp; body} ->
+
+  let codegen_var_delc env var = match var with
+  | TAst.Declaration {name : TAst.ident; tp : TAst.typ; body : TAst.expr} -> 
     let ll_type = ll_type_of tp in
     let TAst.Ident {sym} = name in
     let new_env, var_alias_sym = Env.insert_reg env sym in
@@ -159,6 +159,26 @@ let rec codegen_statement env stm =
     let asgn_buildlets, asgn_tp, _ = codegen_assignment new_env (TAst.Var {ident = name; tp = tp}) body tp in
     let _ = assert (asgn_tp = ll_type) in
     ([i1] @ asgn_buildlets, new_env)
+  
+    let rec codegen_var_delcs env vars = 
+    match vars with
+    | [] -> ([],env)
+    | [h] -> 
+      let d, e = codegen_var_delc env h in
+      (d, e)
+    | h :: t -> 
+      let d, e1 = codegen_var_delc env h in
+      let ds, e2 = codegen_var_delcs e1 t in
+      (d @ ds, e2)
+
+let rec codegen_statement env stm =
+  match stm with
+  | TAst.VarDeclStm declaration_block -> 
+    begin match declaration_block with
+    | TAst.DeclBlock h -> 
+      let dlst, e = codegen_var_delcs env h in 
+      dlst, e
+      end
   | TAst.ExprStm {expr} ->
     begin match expr with
     | None -> ([], env)
@@ -189,6 +209,10 @@ let rec codegen_statement env stm =
   | TAst.CompoundStm {stms} ->
     let buildlets, _ = codegen_statement_seq env stms in
     (buildlets, env)
+  | TAst.BreakStm -> raise Unimplemented
+  | TAst.ContinueStm -> raise Unimplemented
+  | TAst.WhileStm {cond : TAst.expr; body : TAst.statement} -> raise Unimplemented
+  | TAst.ForStm { init : TAst.for_init option; cond : TAst.expr option; update : TAst.expr option; body : TAst.statement } -> raise Unimplemented
   | TAst.ReturnStm {ret} ->
     let buildlets, ret_tp, ret_operand = codegen_expr env ret in
     let tr = CfgBuilder.term_block (Ll.Ret (ret_tp, Some ret_operand)) in
