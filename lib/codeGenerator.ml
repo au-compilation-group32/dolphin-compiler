@@ -20,7 +20,7 @@ let tast_type_of = function
   | Ll.Void -> TAst.Void
   | Ll.I64 -> TAst.Int
   | Ll.I1 -> TAst.Bool
-  | _ -> TAst.ErrorType
+  | Ll.I8 | Ll.I32 | Ll.Ptr _| Ll.Struct _ | Ll.Array _ | Ll.Fun _ | Ll.Namedt _ -> TAst.ErrorType
 
 let ptr_operand_of_lval env = function
   | TAst.Var {ident; _} ->
@@ -40,8 +40,8 @@ let get_binop_insn res_op left_op op right_op op_tp =
   | TAst.Le -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sle, Ll.I64, left_op, right_op))
   | TAst.Gt -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sgt, Ll.I64, left_op, right_op))
   | TAst.Ge -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sge, Ll.I64, left_op, right_op))
-  | TAst.Lor -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.Or, Ll.I1, left_op, right_op))
-  | TAst.Land -> CfgBuilder.add_insn(Some res_op, Ll.Binop(Ll.And, Ll.I1, left_op, right_op))
+  | TAst.Lor -> raise UnexpectedOperator
+  | TAst.Land -> raise UnexpectedOperator
   | TAst.Eq -> 
     begin match op_tp with
     | TAst.Int -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.I64, left_op, right_op))
@@ -205,6 +205,7 @@ let rec codegen_statement env stm =
       end in
     let term_blk_elbro = CfgBuilder.term_block(Ll.Br (tmp_merge_sym)) in
     let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
+    (*TODO: don't add else block if it is None*)
     (cond_buildlets @ [term_blk_cond] @ [start_blk_then] @ buildlets_blk_then @ [term_blk_then] @ [start_blk_else] @ buildlets_blk_elbro @ [term_blk_elbro] @ [start_blk_merge], env)
   | TAst.CompoundStm {stms} ->
     let buildlets, _ = codegen_statement_seq env stms in
