@@ -4,19 +4,28 @@ open Lib.Ast
 let test8: test_case = 
   "test8",
   "positive scope test",
+  let delc11 = Declaration {name = int_x; tp = None; body = Call {fname = read_integer; args = []}} in
+  let delc_block1 = [delc11] in
+  let declar_blockx : declaration_block = DeclBlock delc_block1 in
+  let delc21 = Declaration {name = int_y; tp = None; body = Call {fname = read_integer; args = []}} in
+  let delc_block2 = [delc21] in
+  let declar_blocky : declaration_block = DeclBlock delc_block2 in
+  let delc31 = Declaration {name = int_z; tp = None; body = Call {fname = read_integer; args = []}} in
+  let delc_block3 = [delc31] in
+  let declar_blockz : declaration_block = DeclBlock delc_block3 in
   [
-    VarDeclStm {name = int_x; tp = None; body = Call {fname = read_integer; args = []}};
+    VarDeclStm declar_blockx;
     ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_x)]})};
-    VarDeclStm {name = int_y; tp = None; body = Call {fname = read_integer; args = []}};
+    VarDeclStm declar_blocky;
     ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_y)]})};
-    VarDeclStm {name = int_z; tp = None; body = Call {fname = read_integer; args = []}};
+    VarDeclStm declar_blockz;
     ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_z)]})};
 
     IfThenElseStm {
       cond = Boolean {bool = true};
       thbr = CompoundStm {stms = 
         [
-          VarDeclStm {name = int_y; tp = None; body = Call {fname = read_integer; args = []}};
+          VarDeclStm declar_blocky;
           ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_y)]})}
         ]
       };
@@ -29,7 +38,7 @@ let test8: test_case =
       thbr = CompoundStm {stms = 
         [
           ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_y)]})};
-          VarDeclStm {name = int_y; tp = None; body = Call {fname = read_integer; args = []}};
+          VarDeclStm declar_blocky;
           ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_y)]})}
         ]
       };
@@ -41,7 +50,7 @@ let test8: test_case =
       cond = Boolean {bool = true};
       thbr = CompoundStm {stms = 
         [
-          VarDeclStm {name = int_y; tp = None; body = Call {fname = read_integer; args = []}};
+          VarDeclStm declar_blocky;
           ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_y)]})};
 
           IfThenElseStm {
@@ -52,7 +61,7 @@ let test8: test_case =
                   cond = Boolean {bool = true};
                   thbr = CompoundStm {stms = 
                     [
-                      VarDeclStm {name = int_z; tp = None; body = Call {fname = read_integer; args = []}};
+                      VarDeclStm declar_blockz;
                       ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_z)]})};
                       ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_x)]})};
                       ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_y)]})};
@@ -69,7 +78,7 @@ let test8: test_case =
                   };
                   elbro = None;
                 };
-                VarDeclStm {name = int_z; tp = None; body = Call {fname = read_integer; args = []}};
+                VarDeclStm declar_blockz;
                 ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_z)]})};
                 ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_x)]})};
                 ExprStm {expr = Some (Call {fname = print_integer; args = [Lval(Var int_y)]})};
