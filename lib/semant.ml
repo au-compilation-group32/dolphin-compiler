@@ -133,6 +133,42 @@ and typecheck_expr env expr tp =
   then let _ = Env.insert_error env (Errors.TypeMismatch {expected = tp; actual = texprtp}) in texpr
   else texpr 
 
+
+let typecheck_var_delc env var = match var with
+| Declaration {name : Ast.ident; tp : Ast.typ option; body : Ast.expr} -> 
+  let decl_sym = let Ast.Ident{name = s} = name in Sym.symbol s in
+  let typed_body, body_tp = infertype_expr env body in
+  let _ = if body_tp = TAst.Void then 
+    let _ = Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym}) in body_tp else body_tp in
+  let stm_tp = match tp with
+  | None -> if body_tp = TAst.Void then TAst.ErrorType else body_tp
+  | Some t -> 
+    let decl_tp = typecheck_typ t in
+    if decl_tp = TAst.Void 
+    then 
+      let _ = Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym}) in
+      body_tp 
+    else if decl_tp <> body_tp && body_tp <> TAst.ErrorType && body_tp <> TAst.Void
+    then 
+      let _ = Env.insert_error env (Errors.TypeMismatch{expected = decl_tp; actual = body_tp}) in
+      decl_tp 
+    else decl_tp
+  in
+  let new_env : Env.environment = Env.insert_local_decl env decl_sym stm_tp in
+  (TAst.Declaration {name = TAst.Ident {sym = decl_sym}; tp = stm_tp; body = typed_body}, new_env)
+
+  let rec typecheck_var_delcs env vars = 
+  match vars with
+  | [] -> ([],env)
+  | [h] -> 
+    let d, e = typecheck_var_delc env h in
+    ([d], e)
+  | h :: t -> 
+    let d, e1 = typecheck_var_delc env h in
+    let ds, e2 = typecheck_var_delcs e1 t in
+    (d::ds, e2)
+
+
 (* should check the validity of a statement and produce the corresponding typed statement. Should use typecheck_expr and/or infertype_expr as necessary. *)
 let rec typecheck_statement env stm =
   match stm with
@@ -145,27 +181,22 @@ let rec typecheck_statement env stm =
         let _ = Env.insert_error env err in t
     in
     let x : TAst.statement = TAst.ReturnStm {ret=b} in (x, env)
-  | Ast.VarDeclStm {name : Ast.ident; tp : Ast.typ option; body : Ast.expr} -> 
-    let decl_sym = let Ast.Ident{name = s} = name in Sym.symbol s in
-    let typed_body, body_tp = infertype_expr env body in
-    let _ = if body_tp = TAst.Void then 
-      let _ = Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym}) in body_tp else body_tp in
-    let stm_tp = match tp with
-    | None -> if body_tp = TAst.Void then TAst.ErrorType else body_tp
-    | Some t -> 
-      let decl_tp = typecheck_typ t in
-      if decl_tp = TAst.Void 
-      then 
-        let _ = Env.insert_error env (Errors.InvalidVoidType{sym = decl_sym}) in
-        body_tp 
-      else if decl_tp <> body_tp && body_tp <> TAst.ErrorType && body_tp <> TAst.Void
-      then 
-        let _ = Env.insert_error env (Errors.TypeMismatch{expected = decl_tp; actual = body_tp}) in
-        decl_tp 
-      else decl_tp
-    in
-    let new_env = Env.insert_local_decl env decl_sym stm_tp in
-    (TAst.VarDeclStm {name = TAst.Ident {sym = decl_sym}; tp = stm_tp; body = typed_body}, new_env) 
+  
+  | BreakStm -> raise Unimplemented
+  | ContinueStm -> raise Unimplemented
+  | WhileStm {cond : expr; body : statement} -> raise Unimplemented
+  | ForStm { init : for_init option; cond : expr option; update : expr option; body : statement } -> raise Unimplemented
+  | Ast.VarDeclStm declaration_block -> 
+    begin match declaration_block with
+    | DeclBlock h -> 
+      let dlst, e =typecheck_var_delcs env h in 
+      let decl = TAst.DeclBlock dlst in
+      TAst.VarDeclStm decl, e
+      (*raise Unimplemented
+      let trying elem = typecheck_var_delc env elem in
+      let (d: TAst.single_declaration list, e: Env.environment) = List.map trying h in 
+      TAst.VarDeclStm declaration_block DeclBlock d, env*)
+      end
   | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
     let (b, t) = infertype_expr env cond in 
     let _ = 
