@@ -160,9 +160,6 @@ let typecheck_var_delc env var = match var with
   let rec typecheck_var_delcs env vars = 
   match vars with
   | [] -> ([],env)
-  | [h] -> 
-    let d, e = typecheck_var_delc env h in
-    ([d], e)
   | h :: t -> 
     let d, e1 = typecheck_var_delc env h in
     let ds, e2 = typecheck_var_delcs e1 t in
