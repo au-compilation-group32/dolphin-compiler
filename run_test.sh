@@ -9,8 +9,10 @@ if [ $? -ne 0 ]; then
     diff bin/$test_name/output_actual.txt bin/$test_name/output_expected.txt
     if [ $? -ne 0 ]; then
         echo "diff reports that expected and actual output are different"
+        exit 1
     else
         echo "diff reports that expected and actual output are the same"
+        exit 0
     fi
 else
     echo "Semantics analysis success, compile and run"
@@ -19,8 +21,11 @@ else
     diff bin/$test_name/output_actual.txt bin/$test_name/output_expected.txt
     if [ $? -ne 0 ]; then
         echo "diff reports that expected and actual output are different"
+        rm a.out
+        exit 1
     else
         echo "diff reports that expected and actual output are the same"
+        rm a.out
+        exit 0
     fi
-    rm a.out
 fi
