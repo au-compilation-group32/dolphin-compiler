@@ -229,18 +229,12 @@ let initial_environment = Env.make_env Library.library_functions
 let typecheck_prog prg =
   let env = initial_environment in
   let tprog , _ = typecheck_statement_seq env prg in 
-  let temp = List.length tprog in
-  let env2 = if temp = 0 
-    then 
-      let err = Errors.NoReturn {sta = None} in 
-      let _ = Env.insert_error env err in env
-    else
-      let x = List.nth tprog (temp-1) in
-      begin match x with
-    | TAst.ReturnStm _ -> env
-    | TAst.VarDeclStm _ | TAst.ExprStm _ | TAst.IfThenElseStm _ | TAst.WhileStm _ | TAst.ForStm _ | TAst.ContinueStm | TAst.BreakStm | TAst.CompoundStm _ -> 
-      let err = Errors.NoReturn {sta = Some x} in 
-      let _ = Env.insert_error env err in env
-      end
-  in
-  tprog, Env.(env2.errors)
+  let _ = match List.rev tprog with 
+  | [] -> Env.insert_error env Errors.NoReturn
+  | h::_ -> 
+    begin match h with 
+      | TAst.ReturnStm _ -> ()
+      | TAst.VarDeclStm _ | TAst.ExprStm _ | TAst.IfThenElseStm _ | TAst.WhileStm _ | TAst.ForStm _ | TAst.ContinueStm | TAst.BreakStm | TAst.CompoundStm _ ->
+        Env.insert_error env Errors.NoReturn
+    end in
+  tprog, Env.(env.errors)

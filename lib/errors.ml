@@ -6,7 +6,7 @@ module TPretty = TypedPretty
 type error =
 | TypeMismatch of {expected : TAst.typ; actual : TAst.typ}
 | ShouldBeCallOrAssignment of {expr : TAst.expr}
-| NoReturn of {sta : TAst.statement option}
+| NoReturn
 | LValueNotFound of {sym: Sym.symbol}
 | LValueInvalid of {sym: Sym.symbol}
 | FunctionUndeclared of {sym: Sym.symbol}
@@ -28,6 +28,6 @@ let error_to_string err =
   | ShouldBeCallOrAssignment {expr} -> 
     let _ = PrintBox_text.output stdout (TPretty.expr_to_tree expr) in
     Printf.sprintf "Expression Statement must be either Call or Assignment"
-  | NoReturn {sta} -> Printf.sprintf "Program has no return."
+  | NoReturn -> Printf.sprintf "Program has no return."
   | InvalidVoidType {sym; _} -> Printf.sprintf "Identifier %s has invalid type void." (Sym.name sym)
   | InvalidVoidTypeOperand {expr; _} -> Printf.sprintf "Operand has invalid type void."
