@@ -177,10 +177,46 @@ let rec typecheck_statement env stm =
   | Ast.ReturnStm {ret : Ast.expr} -> 
     let b = typecheck_expr env ret TAst.Int in 
     let x = TAst.ReturnStm {ret=b} in (x, env)
-  | BreakStm -> raise Unimplemented
-  | ContinueStm -> raise Unimplemented
-  | WhileStm {cond : expr; body : statement} -> raise Unimplemented
-  | ForStm { init : for_init option; cond : expr option; update : expr option; body : statement } -> raise Unimplemented
+  | Ast.BreakStm -> TAst.BreakStm, env
+  | Ast.ContinueStm -> TAst.ContinueStm, env
+  | Ast.WhileStm {cond : expr; body : statement} -> 
+    let c = typecheck_expr env cond TAst.Bool in 
+    let b, newEnv = typecheck_statement env body in
+    TAst.WhileStm {cond = c; body =b}, newEnv
+  | Ast.ForStm { init : for_init option; cond : expr option; update : expr option; body : statement } -> 
+    let ini, newEnv = begin match init with
+    | None -> None, env
+    | Some FIExpr i -> 
+      let forE, _ = infertype_expr env i in
+      let forExpr = TAst.FIExpr forE in
+      Some forExpr, env
+    | Some FIDecl declaration_block -> 
+      begin match declaration_block with
+      | DeclBlock h -> 
+        let forD, newE = typecheck_var_delcs env h in
+        let forDe = TAst.DeclBlock forD in
+        let forDecl = TAst.FIDecl forDe in
+        Some forDecl, newE
+        end
+      end in
+    let con = begin match cond with
+    | None -> None
+    | Some c -> 
+      let co, _ = infertype_expr newEnv c in
+      Some co
+      end in
+    let upd =begin match update with
+    | None -> None
+    | Some u -> 
+      let up, _ = infertype_expr newEnv u in
+      Some up
+      end in
+    (*ForStm of { init : for_init option 
+            ; cond : expr option
+            ; update : expr option
+            ; body : statement }*)
+    let stat, newEnv2 = typecheck_statement newEnv body in
+    TAst.ForStm{init = ini; cond =con; update =upd; body = stat}, newEnv2
   | Ast.VarDeclStm declaration_block -> 
     begin match declaration_block with
     | DeclBlock h -> 
