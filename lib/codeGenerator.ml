@@ -216,7 +216,9 @@ let rec codegen_statement env stm =
     | None -> ([], env)
     | Some {conti = _; brea} -> 
       let term_blk_break = CfgBuilder.term_block(Ll.Br (brea)) in 
-      ([term_blk_break], env)
+      let _, tmp_unreachable_sym = Env.insert_label env in 
+      let start_blk_unreachable = CfgBuilder.start_block(tmp_unreachable_sym) in
+      ([term_blk_break] @ [start_blk_unreachable], env)
     end
   | TAst.ContinueStm -> 
     let is_inside = Env.get_loop_sym env in
@@ -224,7 +226,9 @@ let rec codegen_statement env stm =
     | None -> ([], env)
     | Some {conti; brea=_} -> 
       let term_blk_continue = CfgBuilder.term_block(Ll.Br (conti)) in 
-      ([term_blk_continue], env)
+      let _, tmp_unreachable_sym = Env.insert_label env in 
+      let start_blk_unreachable = CfgBuilder.start_block(tmp_unreachable_sym) in
+      ([term_blk_continue] @ [start_blk_unreachable], env)
     end
   | TAst.WhileStm {cond : TAst.expr; body : TAst.statement} -> 
     let _, tmp_cond_sym = Env.insert_label env in
