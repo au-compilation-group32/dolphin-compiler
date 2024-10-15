@@ -221,11 +221,52 @@ let rec codegen_statement env stm =
     let term_blk_cond = CfgBuilder.term_block(Ll.Cbr (cond_op, tmp_body_sym, tmp_merge_sym)) in
     let start_blk_body = CfgBuilder.start_block(tmp_body_sym) in
     let buildlets_blk_body, _ = codegen_statement env body in
-    let term_blk_body = CfgBuilder.term_block(Ll.Br (tmp_merge_sym)) in
+    let term_blk_body = CfgBuilder.term_block(Ll.Br (tmp_cond_sym)) in
     let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
     let result = cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_merge] in
     (result, env)
-  | TAst.ForStm { init : TAst.for_init option; cond : TAst.expr option; update : TAst.expr option; body : TAst.statement } -> raise Unimplemented
+  | TAst.ForStm { init : TAst.for_init option; cond : TAst.expr option; update : TAst.expr option; body : TAst.statement } -> 
+    let init_buildlets, newEnv = begin match init with
+    | None -> [], env
+    | Some FIExpr i -> 
+      let forExpr, _, _ = codegen_expr env i in
+      forExpr, env
+    | Some FIDecl declaration_block -> 
+      begin match declaration_block with
+      | DeclBlock h -> 
+        let forDecl, newE = codegen_var_delcs env h in
+        forDecl, newE
+        end
+      end in
+    let cond_buildlets, cond_tp, cond_op = begin match cond with
+    | None -> 
+      let boo = TAst.Boolean {bool = true} in
+      let co, ty, op = codegen_expr newEnv boo in co, ty, op
+    | Some c -> 
+      let co, ty, op = codegen_expr newEnv c in
+      co, ty, op
+      end in
+    let update_buildlets =begin match update with
+    | None -> []
+    | Some u -> 
+      let up, _, _ = codegen_expr newEnv u in
+      up
+      end in
+    let buildlets_blk_body, _ = codegen_statement newEnv body in
+    
+    let _, tmp_cond_sym = Env.insert_label env in
+    let _, tmp_body_sym = Env.insert_label env in
+    let _, tmp_update_sym = Env.insert_label env in
+    let _, tmp_merge_sym = Env.insert_label env in 
+    let start_blk_cond = CfgBuilder.start_block(tmp_cond_sym) in
+    let term_blk_cond = CfgBuilder.term_block(Ll.Cbr (cond_op, tmp_body_sym, tmp_merge_sym)) in
+    let start_blk_body = CfgBuilder.start_block(tmp_body_sym) in
+    let term_blk_body = CfgBuilder.term_block(Ll.Br (tmp_update_sym)) in
+    let start_blk_update = CfgBuilder.start_block(tmp_update_sym) in
+    let term_blk_update = CfgBuilder.term_block(Ll.Br (tmp_cond_sym)) in
+    let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
+    let result = init_buildlets @ [start_blk_cond] @ cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_update] @ update_buildlets @ [term_blk_update] @ [start_blk_merge] in
+    (result, env)
   | TAst.ReturnStm {ret} ->
     let buildlets, ret_tp, ret_operand = codegen_expr env ret in
     let tr = CfgBuilder.term_block (Ll.Ret (ret_tp, Some ret_operand)) in
