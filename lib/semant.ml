@@ -177,12 +177,23 @@ let rec typecheck_statement env stm =
   | Ast.ReturnStm {ret : Ast.expr} -> 
     let b = typecheck_expr env ret TAst.Int in 
     let x = TAst.ReturnStm {ret=b} in (x, env)
-  | Ast.BreakStm -> TAst.BreakStm, env
-  | Ast.ContinueStm -> TAst.ContinueStm, env
+  | Ast.BreakStm -> 
+    let _ = 
+      if Env.is_inside_loop env
+      then Env.insert_error env Errors.BreakOrContinueOutsideLoop
+      else () in
+    TAst.BreakStm, env
+  | Ast.ContinueStm ->
+    let _ = 
+      if Env.is_inside_loop env
+      then Env.insert_error env Errors.BreakOrContinueOutsideLoop
+      else () in
+  TAst.ContinueStm, env
   | Ast.WhileStm {cond : expr; body : statement} -> 
     let c = typecheck_expr env cond TAst.Bool in 
-    let b, newEnv = typecheck_statement env body in
-    TAst.WhileStm {cond = c; body =b}, newEnv
+    let inside_loop_env = Env.enter_loop env in
+    let b, _ = typecheck_statement inside_loop_env body in
+    TAst.WhileStm {cond = c; body =b}, env 
   | Ast.ForStm { init : for_init option; cond : expr option; update : expr option; body : statement } -> 
     let ini, newEnv = begin match init with
     | None -> None, env
@@ -215,8 +226,9 @@ let rec typecheck_statement env stm =
             ; cond : expr option
             ; update : expr option
             ; body : statement }*)
-    let stat, newEnv2 = typecheck_statement newEnv body in
-    TAst.ForStm{init = ini; cond =con; update =upd; body = stat}, newEnv2
+    let inside_loop_env = Env.enter_loop newEnv in
+    let stat, _ = typecheck_statement inside_loop_env body in
+    TAst.ForStm{init = ini; cond =con; update =upd; body = stat}, env
   | Ast.VarDeclStm declaration_block -> 
     begin match declaration_block with
     | DeclBlock h -> 

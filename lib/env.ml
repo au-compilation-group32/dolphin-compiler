@@ -9,7 +9,9 @@ type identType =
   | VarTyp of TAst.typ
   | FunTyp of TAst.funtype
 
-type environment = {idents : identType Sym.Table.t ; errors : Errors.error list ref}
+type environment = {idents : identType Sym.Table.t;
+                    errors : Errors.error list ref;
+                    is_inside_loop: bool}
 
 (* create an initial environment with the given functions defined *)
 let make_env function_types =
@@ -19,7 +21,7 @@ let make_env function_types =
       (fun env (fsym, ftp) -> Sym.Table.add fsym (FunTyp ftp) env)
       emp 
       function_types
-  in {idents = env; errors = ref []}
+  in {idents = env; errors = ref []; is_inside_loop = false}
 
 (* insert a local declaration into the environment *)
 let insert_local_decl env sym typ =
@@ -34,3 +36,7 @@ let insert_error env err =
 let lookup_var_fun env sym =
   let {idents; _} = env in
   Sym.Table.find_opt sym idents
+
+let enter_loop env = {env with is_inside_loop = true}
+
+let is_inside_loop {is_inside_loop; _} = is_inside_loop
