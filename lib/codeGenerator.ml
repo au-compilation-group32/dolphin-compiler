@@ -210,17 +210,32 @@ let rec codegen_statement env stm =
   | TAst.CompoundStm {stms} ->
     let buildlets, _ = codegen_statement_seq env stms in
     (buildlets, env)
-  | TAst.BreakStm -> raise Unimplemented
-  | TAst.ContinueStm -> raise Unimplemented
+  | TAst.BreakStm -> 
+    let is_inside = Env.get_loop_sym env in
+    begin match is_inside with
+    | None -> ([], env)
+    | Some {conti = _; brea} -> 
+      let term_blk_break = CfgBuilder.term_block(Ll.Br (brea)) in 
+      ([term_blk_break], env)
+    end
+  | TAst.ContinueStm -> 
+    let is_inside = Env.get_loop_sym env in
+    begin match is_inside with
+    | None -> ([], env)
+    | Some {conti; brea=_} -> 
+      let term_blk_continue = CfgBuilder.term_block(Ll.Br (conti)) in 
+      ([term_blk_continue], env)
+    end
   | TAst.WhileStm {cond : TAst.expr; body : TAst.statement} -> 
-    let cond_buildlets, cond_tp, cond_op = codegen_expr env cond in
-    let _ = assert(cond_tp = Ll.I1) in
     let _, tmp_cond_sym = Env.insert_label env in
-    let _, tmp_body_sym = Env.insert_label env in
     let _, tmp_merge_sym = Env.insert_label env in 
+    let newEnv = Env.set_loop_sym env tmp_cond_sym tmp_merge_sym in
+    let cond_buildlets, cond_tp, cond_op = codegen_expr newEnv cond in
+    let _ = assert(cond_tp = Ll.I1) in
+    let _, tmp_body_sym = Env.insert_label newEnv in
     let term_blk_cond = CfgBuilder.term_block(Ll.Cbr (cond_op, tmp_body_sym, tmp_merge_sym)) in
     let start_blk_body = CfgBuilder.start_block(tmp_body_sym) in
-    let buildlets_blk_body, _ = codegen_statement env body in
+    let buildlets_blk_body, _ = codegen_statement newEnv body in
     let term_blk_body = CfgBuilder.term_block(Ll.Br (tmp_cond_sym)) in
     let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
     let result = cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_merge] in
@@ -238,26 +253,27 @@ let rec codegen_statement env stm =
         forDecl, newE
         end
       end in
+    let _, tmp_update_sym = Env.insert_label newEnv in
+    let _, tmp_merge_sym = Env.insert_label newEnv in 
+    let newEnv2 = Env.set_loop_sym newEnv tmp_update_sym tmp_merge_sym in
     let cond_buildlets, cond_tp, cond_op = begin match cond with
     | None -> 
       let boo = TAst.Boolean {bool = true} in
-      let co, ty, op = codegen_expr newEnv boo in co, ty, op
+      let co, ty, op = codegen_expr newEnv2 boo in co, ty, op
     | Some c -> 
-      let co, ty, op = codegen_expr newEnv c in
+      let co, ty, op = codegen_expr newEnv2 c in
       co, ty, op
       end in
     let update_buildlets =begin match update with
     | None -> []
     | Some u -> 
-      let up, _, _ = codegen_expr newEnv u in
+      let up, _, _ = codegen_expr newEnv2 u in
       up
       end in
-    let buildlets_blk_body, _ = codegen_statement newEnv body in
+    let buildlets_blk_body, _ = codegen_statement newEnv2 body in
     
-    let _, tmp_cond_sym = Env.insert_label env in
-    let _, tmp_body_sym = Env.insert_label env in
-    let _, tmp_update_sym = Env.insert_label env in
-    let _, tmp_merge_sym = Env.insert_label env in 
+    let _, tmp_cond_sym = Env.insert_label newEnv2 in
+    let _, tmp_body_sym = Env.insert_label newEnv2 in
     let start_blk_cond = CfgBuilder.start_block(tmp_cond_sym) in
     let term_blk_cond = CfgBuilder.term_block(Ll.Cbr (cond_op, tmp_body_sym, tmp_merge_sym)) in
     let start_blk_body = CfgBuilder.start_block(tmp_body_sym) in
