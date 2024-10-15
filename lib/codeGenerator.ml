@@ -233,12 +233,14 @@ let rec codegen_statement env stm =
     let cond_buildlets, cond_tp, cond_op = codegen_expr newEnv cond in
     let _ = assert(cond_tp = Ll.I1) in
     let _, tmp_body_sym = Env.insert_label newEnv in
+    let term_blk_start = CfgBuilder.term_block(Ll.Br (tmp_cond_sym)) in
+    let start_blk_cond = CfgBuilder.start_block(tmp_cond_sym) in
     let term_blk_cond = CfgBuilder.term_block(Ll.Cbr (cond_op, tmp_body_sym, tmp_merge_sym)) in
     let start_blk_body = CfgBuilder.start_block(tmp_body_sym) in
     let buildlets_blk_body, _ = codegen_statement newEnv body in
     let term_blk_body = CfgBuilder.term_block(Ll.Br (tmp_cond_sym)) in
     let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
-    let result = cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_merge] in
+    let result = [term_blk_start] @ [start_blk_cond] @ cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_merge] in
     (result, env)
   | TAst.ForStm { init : TAst.for_init option; cond : TAst.expr option; update : TAst.expr option; body : TAst.statement } -> 
     let init_buildlets, newEnv = begin match init with
@@ -275,6 +277,7 @@ let rec codegen_statement env stm =
     
     let _, tmp_cond_sym = Env.insert_label newEnv2 in
     let _, tmp_body_sym = Env.insert_label newEnv2 in
+    let term_blk_init = CfgBuilder.term_block(Ll.Br (tmp_cond_sym)) in
     let start_blk_cond = CfgBuilder.start_block(tmp_cond_sym) in
     let term_blk_cond = CfgBuilder.term_block(Ll.Cbr (cond_op, tmp_body_sym, tmp_merge_sym)) in
     let start_blk_body = CfgBuilder.start_block(tmp_body_sym) in
@@ -282,7 +285,7 @@ let rec codegen_statement env stm =
     let start_blk_update = CfgBuilder.start_block(tmp_update_sym) in
     let term_blk_update = CfgBuilder.term_block(Ll.Br (tmp_cond_sym)) in
     let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
-    let result = init_buildlets @ [start_blk_cond] @ cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_update] @ update_buildlets @ [term_blk_update] @ [start_blk_merge] in
+    let result = init_buildlets @ [term_blk_init] @ [start_blk_cond] @ cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_update] @ update_buildlets @ [term_blk_update] @ [start_blk_merge] in
     (result, env)
   | TAst.ReturnStm {ret} ->
     let buildlets, ret_tp, ret_operand = codegen_expr env ret in
