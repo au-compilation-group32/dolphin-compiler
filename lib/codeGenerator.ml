@@ -264,6 +264,7 @@ let rec codegen_statement env stm =
       let co, ty, op = codegen_expr newEnv2 c in
       co, ty, op
       end in
+    let _ = assert(cond_tp = Ll.I1) in
     let update_buildlets =begin match update with
     | None -> []
     | Some u -> 
