@@ -212,7 +212,19 @@ let rec codegen_statement env stm =
     (buildlets, env)
   | TAst.BreakStm -> raise Unimplemented
   | TAst.ContinueStm -> raise Unimplemented
-  | TAst.WhileStm {cond : TAst.expr; body : TAst.statement} -> raise Unimplemented
+  | TAst.WhileStm {cond : TAst.expr; body : TAst.statement} -> 
+    let cond_buildlets, cond_tp, cond_op = codegen_expr env cond in
+    let _ = assert(cond_tp = Ll.I1) in
+    let _, tmp_cond_sym = Env.insert_label env in
+    let _, tmp_body_sym = Env.insert_label env in
+    let _, tmp_merge_sym = Env.insert_label env in 
+    let term_blk_cond = CfgBuilder.term_block(Ll.Cbr (cond_op, tmp_body_sym, tmp_merge_sym)) in
+    let start_blk_body = CfgBuilder.start_block(tmp_body_sym) in
+    let buildlets_blk_body, _ = codegen_statement env body in
+    let term_blk_body = CfgBuilder.term_block(Ll.Br (tmp_merge_sym)) in
+    let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
+    let result = cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_merge] in
+    (result, env)
   | TAst.ForStm { init : TAst.for_init option; cond : TAst.expr option; update : TAst.expr option; body : TAst.statement } -> raise Unimplemented
   | TAst.ReturnStm {ret} ->
     let buildlets, ret_tp, ret_operand = codegen_expr env ret in
