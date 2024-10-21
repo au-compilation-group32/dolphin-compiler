@@ -150,7 +150,7 @@ and codegen_call env fname args tp =
   in (folded_buildlets @ [call_insn], ll_ret_tp, Ll.Id ret_op)
 
 
-  let codegen_var_delc env var = match var with
+let codegen_var_delc env var = match var with
   | TAst.Declaration {name : TAst.ident; tp : TAst.typ; body : TAst.expr} -> 
     let ll_type = ll_type_of tp in
     let TAst.Ident {sym} = name in
@@ -214,7 +214,7 @@ let rec codegen_statement env stm =
     let is_inside = Env.get_loop_sym env in
     begin match is_inside with
     | None -> ([], env)
-    | Some {conti = _; brea} -> 
+    | Some Env.{conti = _; brea} -> 
       let term_blk_break = CfgBuilder.term_block(Ll.Br (brea)) in 
       let _, tmp_unreachable_sym = Env.insert_label env in 
       let start_blk_unreachable = CfgBuilder.start_block(tmp_unreachable_sym) in
@@ -224,7 +224,7 @@ let rec codegen_statement env stm =
     let is_inside = Env.get_loop_sym env in
     begin match is_inside with
     | None -> ([], env)
-    | Some {conti; brea=_} -> 
+    | Some Env.{conti; brea=_} -> 
       let term_blk_continue = CfgBuilder.term_block(Ll.Br (conti)) in 
       let _, tmp_unreachable_sym = Env.insert_label env in 
       let start_blk_unreachable = CfgBuilder.start_block(tmp_unreachable_sym) in
@@ -249,12 +249,12 @@ let rec codegen_statement env stm =
   | TAst.ForStm { init : TAst.for_init option; cond : TAst.expr option; update : TAst.expr option; body : TAst.statement } -> 
     let init_buildlets, newEnv = begin match init with
     | None -> [], env
-    | Some FIExpr i -> 
+    | Some TAst.FIExpr i -> 
       let forExpr, _, _ = codegen_expr env i in
       forExpr, env
-    | Some FIDecl declaration_block -> 
+    | Some TAst.FIDecl declaration_block -> 
       begin match declaration_block with
-      | DeclBlock h -> 
+      | TAst.DeclBlock h -> 
         let forDecl, newE = codegen_var_delcs env h in
         forDecl, newE
         end

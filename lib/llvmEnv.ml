@@ -48,7 +48,7 @@ let get_loop_sym env  =
   | None -> let x: is_inside_type option= None in x
   | Some {conti; brea} -> let x = Some {conti = conti; brea = brea} in x
 
-  let set_loop_sym env con bre  =
+let set_loop_sym env con bre  =
   let {regs=r; counter=c; is_inside_loop = _} = env in
   let inside = {conti = con; brea = bre} in
   let newEnv = {regs=r; counter=c; is_inside_loop = Some inside} in
