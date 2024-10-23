@@ -17,6 +17,10 @@ let int_v = Ident {name = "int_v"}
 let int_p = Ident {name = "int_p"}
 let int_q = Ident {name = "int_q"}
 
+let int_i = Ident {name = "int_i"}
+let int_j = Ident {name = "int_j"}
+let int_k = Ident {name = "int_k"}
+let int_l = Ident {name = "int_k"}
 let bool_a = Ident {name = "bool_a"}
 let bool_b = Ident {name = "bool_b"}
 let bool_c = Ident {name = "bool_c"}
