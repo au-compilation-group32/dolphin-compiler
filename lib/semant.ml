@@ -214,7 +214,7 @@ let rec typecheck_statement env stm =
     let con = begin match cond with
     | None -> None
     | Some c -> 
-      let co, _ = infertype_expr newEnv c in
+      let co = typecheck_expr newEnv c TAst.Bool in
       Some co
       end in
     let upd =begin match update with
