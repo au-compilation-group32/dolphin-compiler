@@ -1,0 +1,12 @@
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
+Type mismatch: expected bool but found int.
