@@ -178,14 +178,15 @@ let rec typecheck_statement env stm =
     let b = typecheck_expr env ret TAst.Int in 
     let x = TAst.ReturnStm {ret=b} in (x, env)
   | Ast.BreakStm -> 
+    let _ = Printf.printf "%b" (Env.is_inside_loop env) in
     let _ = 
-      if Env.is_inside_loop env
+      if not (Env.is_inside_loop env)
       then Env.insert_error env Errors.BreakOrContinueOutsideLoop
       else () in
     TAst.BreakStm, env
   | Ast.ContinueStm ->
     let _ = 
-      if Env.is_inside_loop env
+      if not (Env.is_inside_loop env)
       then Env.insert_error env Errors.BreakOrContinueOutsideLoop
       else () in
   TAst.ContinueStm, env
