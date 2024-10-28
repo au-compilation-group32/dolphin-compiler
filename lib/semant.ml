@@ -8,41 +8,41 @@ exception UnreachableControlFlow
 exception UnexpectedErrorType
 
 let typecheck_typ = function
-| Ast.Int -> TAst.Int
-| Ast.Bool -> TAst.Bool
+| Ast.Int _ -> TAst.Int
+| Ast.Bool _ -> TAst.Bool
 
 let typecheck_binop = function
-| Ast.Plus -> TAst.Plus
-| Ast.Minus -> TAst.Minus
-| Ast.Mul -> TAst.Mul
-| Ast.Div -> TAst.Div
-| Ast.Rem -> TAst.Rem
-| Ast.Lt -> TAst.Lt
-| Ast.Le -> TAst.Le
-| Ast.Gt-> TAst.Gt
-| Ast.Ge-> TAst.Ge
-| Ast.Lor-> TAst.Lor
-| Ast.Land-> TAst.Land
-| Ast.Eq-> TAst.Eq
-| Ast.NEq -> TAst.NEq
+| Ast.Plus _ -> TAst.Plus
+| Ast.Minus _ -> TAst.Minus
+| Ast.Mul _ -> TAst.Mul
+| Ast.Div _ -> TAst.Div
+| Ast.Rem _ -> TAst.Rem
+| Ast.Lt _ -> TAst.Lt
+| Ast.Le _ -> TAst.Le
+| Ast.Gt _-> TAst.Gt
+| Ast.Ge _-> TAst.Ge
+| Ast.Lor _-> TAst.Lor
+| Ast.Land _-> TAst.Land
+| Ast.Eq _-> TAst.Eq
+| Ast.NEq _ -> TAst.NEq
 
 let typecheck_unop = function
-| Ast.Neg -> TAst.Neg
-| Ast.Lnot -> TAst.Lnot
+| Ast.Neg _ -> TAst.Neg
+| Ast.Lnot _ -> TAst.Lnot
 
 let get_expected_binop_arg_typ = function 
-  | Plus | Minus | Mul | Div | Rem -> TAst.Int
-  | Lt | Le | Gt | Ge -> TAst.Int
-  | Lor | Land -> TAst.Bool 
-  | Eq | NEq -> raise UnreachableControlFlow
+  | Plus _ | Minus _ | Mul _ | Div _ | Rem _ -> TAst.Int
+  | Lt _ | Le _ | Gt _ | Ge _ -> TAst.Int
+  | Lor _ | Land _ -> TAst.Bool 
+  | Eq _ | NEq _ -> raise UnreachableControlFlow
 let get_expected_binop_res_typ = function 
-  | Plus | Minus | Mul | Div | Rem -> TAst.Int
-  | Lt | Le | Gt | Ge -> TAst.Bool
-  | Lor | Land -> TAst.Bool
-  | Eq | NEq -> TAst.Bool
+  | Plus _ | Minus _ | Mul _ | Div _ | Rem _ -> TAst.Int
+  | Lt _ | Le _ | Gt _ | Ge _ -> TAst.Bool
+  | Lor _ | Land _ -> TAst.Bool
+  | Eq _ | NEq _ -> TAst.Bool
 let get_expected_unop_arg_typ = function 
-  | Neg -> TAst.Int
-  | Lnot -> TAst.Bool
+  | Neg _ -> TAst.Int
+  | Lnot _ -> TAst.Bool
 
 (* should return a pair of a typed expression and its inferred type. you can/should use typecheck_expr inside infertype_expr. *)
 let rec infertype_expr env expr =
@@ -56,13 +56,13 @@ let rec infertype_expr env expr =
   | Ast.Call {fname; args} -> infertype_call env fname args
 and infertype_binop env left op right =
     match op with
-    | Plus | Minus | Mul | Div | Rem | Lt | Le | Gt | Ge | Lor | Land -> 
+    | Plus _ | Minus _ | Mul _ | Div _ | Rem _ | Lt _ | Le _ | Gt _ | Ge _ | Lor _ | Land _ -> 
       let expected_arg_typ = get_expected_binop_arg_typ op in
       let expected_res_typ = get_expected_binop_res_typ op in
       let left_texpr = typecheck_expr env left expected_arg_typ in
       let right_texpr = typecheck_expr env right expected_arg_typ in
       (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = expected_res_typ}, expected_res_typ)
-    | Eq | NEq ->
+    | Eq _ | NEq _ ->
       let right_texpr, right_tp = infertype_expr env right in
       let left_texpr, left_tp = infertype_expr env left in
       let _ = 
@@ -174,28 +174,28 @@ let rec typecheck_var_delcs env vars =
 (* should check the validity of a statement and produce the corresponding typed statement. Should use typecheck_expr and/or infertype_expr as necessary. *)
 let rec typecheck_statement env stm =
   match stm with
-  | Ast.ReturnStm {ret : Ast.expr} -> 
+  | Ast.ReturnStm {ret : Ast.expr; loc : Loc.location} -> 
     let b = typecheck_expr env ret TAst.Int in 
     let x = TAst.ReturnStm {ret=b} in (x, env)
-  | Ast.BreakStm -> 
+  | Ast.BreakStm _ -> 
     let _ = Printf.printf "%b" (Env.is_inside_loop env) in
     let _ = 
       if not (Env.is_inside_loop env)
       then Env.insert_error env Errors.BreakOrContinueOutsideLoop
       else () in
     TAst.BreakStm, env
-  | Ast.ContinueStm ->
+  | Ast.ContinueStm _ ->
     let _ = 
       if not (Env.is_inside_loop env)
       then Env.insert_error env Errors.BreakOrContinueOutsideLoop
       else () in
   TAst.ContinueStm, env
-  | Ast.WhileStm {cond : expr; body : statement} -> 
+  | Ast.WhileStm {cond : expr; body : statement; loc : Loc.location} -> 
     let c = typecheck_expr env cond TAst.Bool in 
     let inside_loop_env = Env.enter_loop env in
     let b, _ = typecheck_statement inside_loop_env body in
     TAst.WhileStm {cond = c; body =b}, env 
-  | Ast.ForStm { init : for_init option; cond : expr option; update : expr option; body : statement } -> 
+  | Ast.ForStm { init : for_init option; cond : expr option; update : expr option; body : statement; loc : Loc.location } -> 
     let ini, newEnv = begin match init with
     | None -> None, env
     | Some FIExpr i -> 
@@ -204,8 +204,8 @@ let rec typecheck_statement env stm =
       Some forExpr, env
     | Some FIDecl declaration_block -> 
       begin match declaration_block with
-      | DeclBlock h -> 
-        let forD, newE = typecheck_var_delcs env h in
+      | DeclBlock {declarations : single_declaration list; loc : Loc.location} -> 
+        let forD, newE = typecheck_var_delcs env declarations in
         let forDe = TAst.DeclBlock forD in
         let forDecl = TAst.FIDecl forDe in
         Some forDecl, newE
@@ -232,12 +232,12 @@ let rec typecheck_statement env stm =
     TAst.ForStm{init = ini; cond =con; update =upd; body = stat}, env
   | Ast.VarDeclStm declaration_block -> 
     begin match declaration_block with
-    | DeclBlock h -> 
-      let dlst, e = typecheck_var_delcs env h in 
+    | DeclBlock {declarations : single_declaration list; loc : Loc.location} -> 
+      let dlst, e = typecheck_var_delcs env declarations in 
       let decl = TAst.DeclBlock dlst in
       TAst.VarDeclStm decl, e
     end
-  | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option} -> 
+  | Ast.IfThenElseStm {cond : Ast.expr; thbr : Ast.statement; elbro : Ast.statement option; loc : Loc.location} -> 
     let b = typecheck_expr env cond TAst.Bool in 
     let thS, _ = typecheck_statement env thbr in
     begin match elbro with 
@@ -246,7 +246,7 @@ let rec typecheck_statement env stm =
     | None ->
       (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = None}, env)
     end
-  | Ast.ExprStm {expr : Ast.expr option} -> 
+  | Ast.ExprStm {expr : Ast.expr option; loc : Loc.location} -> 
     begin match expr with 
     | Some e ->
       let (b, _) = infertype_expr env e in
@@ -259,7 +259,7 @@ let rec typecheck_statement env stm =
       (TAst.ExprStm {expr=Some b}, env)
     | None -> (TAst.ExprStm {expr=None}, env)
     end
-  | Ast.CompoundStm {stms : Ast.statement list} -> 
+  | Ast.CompoundStm {stms : Ast.statement list; loc : Loc.location} -> 
     let tstmt_list, _ = typecheck_statement_seq env stms in
     let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, env)
 (* should use typecheck_statement to check the block of statements. *)
