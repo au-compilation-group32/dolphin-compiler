@@ -5,7 +5,7 @@ module Pretty = Pretty
 (* open Dolphin_compiler.TypedPretty *)
 
 (*test name - test description - test program*)
-type test_case = string * string * Ast.program
+(* type test_case = string * string * Ast.program
 let print_integer = Ident {name = "print_integer"}
 let read_integer = Ident {name = "read_integer"}
 let int_x = Ident {name = "int_x"}
@@ -53,4 +53,4 @@ let run_testcase (name, desc, p) =
     let oc = open_out ("bin/" ^ name ^ "/" ^ "dolphin_main.ll") in
     output_string oc (Ll.string_of_prog llprog);
     close_out oc;
-    exit 0
+    exit 0 *)

@@ -1,0 +1,14 @@
+
+(ocamllex
+  (modules lexer)
+)
+
+(menhir
+  (modules parser)
+  ; (flags -la 2 -lc 2 -O 2 --comment --dump-resolved)
+)
+
+(executable
+  (name srcProcessor)
+  (libraries lib)
+)
