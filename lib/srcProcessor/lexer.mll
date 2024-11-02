@@ -8,13 +8,28 @@ rule token = parse
 | [' ' '\t'] {token lexbuf}
 | '\n' {Lexing.new_line lexbuf; token lexbuf}
 | eof   {EOF}
-| ['0'-'9']+ as i { INT_LIT (Int64.of_string i) }
+| "true" {TRUE}
+| "false" {FALSE}
 | '+' {PLUS}
+| '-' {MINUS}
+| '=' {ASSIGN}
+| ':' {COLON}
+| ',' {COMMA}
 | ';' {SEMICOLON}
 | '{' {LBRACE}
 | '}' {RBRACE}
 | '(' {LPAREN}
 | ')' {RPAREN}
+| "var" {VAR}
 | "if" {IF}
 | "else" {ELSE}
-| _ {raise (Error "unexpected character\n")}
+| "while" {WHILE}
+| "for" {FOR}
+| "break" {BREAK}
+| "continue" {CONTINUE}
+| "return" {RETURN}
+| "int" {INT}
+| "bool" {BOOL}
+| ['0'-'9']+ as i { INT_LIT (Int64.of_string i) }
+| ['a'-'z' 'A'-'Z' '_']['0'-'9' 'a'-'z' 'A'-'Z' '_']* as s {IDENT (s)}
+| _ as c {raise (Error (Printf.sprintf "unexpected character %c\n" c))}
