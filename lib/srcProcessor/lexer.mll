@@ -12,6 +12,8 @@ rule token = parse
 | "false" {FALSE}
 | '+' {PLUS}
 | '-' {MINUS}
+| '*' {MUL}
+| '/' {DIV}
 | '%' {REM}
 | '<' {LT}
 | "<=" {LE}
@@ -19,6 +21,7 @@ rule token = parse
 | ">=" {GE}
 | "||" {LOR}
 | "&&" {LAND}
+| '!' {LNOT}
 | "==" {EQ}
 | "!=" {NEQ}
 | '=' {ASSIGN}

@@ -26,9 +26,7 @@ let error_to_string err =
   | FunctionUndeclared {sym; _} -> Printf.sprintf "Undeclared function %s." (Sym.name sym)
   | FunctionNameInvalid {sym; _} -> Printf.sprintf "Expect function name, but %s is a var name." (Sym.name sym)
   | FunctionParamCountMismatch{sym; expected; actual; _} -> Printf.sprintf "Function %s expects %d params, but is given %d params." (Sym.name sym) expected actual
-  | ShouldBeCallOrAssignment {expr} -> 
-    let _ = PrintBox_text.output stdout (TPretty.expr_to_tree expr) in
-    Printf.sprintf "Expression Statement must be either Call or Assignment"
+  | ShouldBeCallOrAssignment {expr = _} -> Printf.sprintf "Expression Statement must be either Call or Assignment"
   | NoReturn -> Printf.sprintf "Program has no return."
   | InvalidVoidType {sym; _} -> Printf.sprintf "Identifier %s has invalid type void." (Sym.name sym)
   | InvalidVoidTypeOperand {expr; _} -> Printf.sprintf "Operand has invalid type void."
