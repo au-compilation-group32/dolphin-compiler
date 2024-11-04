@@ -1,4 +1,3 @@
-
 // end of file
 %token EOF
 // string literals
@@ -55,6 +54,21 @@ tp:
 binop:
 | PLUS {Ast.Plus{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | MINUS {Ast.Minus{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| MUL {Ast.Mul{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| DIV {Ast.Div{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| REM {Ast.Rem{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| LT {Ast.Lt{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| LE {Ast.Le{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| GT {Ast.Gt{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| GE {Ast.Ge{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| LOR {Ast.Lor{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| LAND {Ast.Land{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| EQ {Ast.Eq{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| NEQ {Ast.NEq{loc = {start_pos = $startpos; end_pos = $endpos}}}
+
+unop:
+| NEG {Ast.Neg{loc = {start_pos = $startpos; end_pos = $endpos}}}
+| LNOT {Ast.Lnot{loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 exp:
 | i = INT_LIT {Ast.Integer {int = i; loc = {start_pos = $startpos; end_pos = $endpos}}}

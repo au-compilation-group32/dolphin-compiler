@@ -12,6 +12,15 @@ rule token = parse
 | "false" {FALSE}
 | '+' {PLUS}
 | '-' {MINUS}
+| '%' {REM}
+| '<' {LT}
+| "<=" {LE}
+| '>' {GT}
+| ">=" {GE}
+| "||" {LOR}
+| "&&" {LAND}
+| "==" {EQ}
+| "!=" {NEQ}
 | '=' {ASSIGN}
 | ':' {COLON}
 | ',' {COMMA}
