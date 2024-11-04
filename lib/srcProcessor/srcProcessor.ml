@@ -1,6 +1,8 @@
 module Ast = Lib.Ast
 module Pretty = Lib.Pretty
 module Location = Lib.Location
+module Lexer = Lexer
+module Parser = Parser
  
 let get_loc_from_stm = function 
   | Ast.ExprStm {expr = _; loc} -> loc
@@ -21,7 +23,12 @@ let rec print_loc_list = function
     let _ = print_loc h in
     print_loc_list t
 
-let _ = 
+let src_file_to_ast file_name = 
+  let file = open_in file_name in
+  let buffer = Lexing.from_channel file in
+  Parser.prog Lexer.token buffer
+
+(* let _ = 
   let file = open_in "lib/srcProcessor/test.dolphin" in
   let buffer = Lexing.from_channel file in
   let prog = Parser.prog Lexer.token buffer in
@@ -29,4 +36,4 @@ let _ =
   let _ = Printf.printf "\n==========================\n" in
   let _ = Printf.printf "Location of stms :\n" in
   let _ = print_loc_list prog in
-  Printf.printf "\n"
+  Printf.printf "\n" *)

@@ -1,12 +1,12 @@
-#!/bin/bash
+#!/test/bash
 
 test_name=$1
 
-dune exec bin/$test_name/testCase.exe
+dune exec test/$test_name/testCase.exe
 
 if [ $? -ne 0 ]; then
     echo "Semantics analysis failed, comparing error lists:"
-    diff bin/$test_name/output_actual.txt bin/$test_name/output_expected.txt
+    diff test/$test_name/output_actual.txt test/$test_name/output_expected.txt
     if [ $? -ne 0 ]; then
         echo "diff reports that expected and actual output are different"
         exit 1
@@ -16,9 +16,9 @@ if [ $? -ne 0 ]; then
     fi
 else
     echo "Semantics analysis success, compile and run"
-    clang main.c bin/$test_name/dolphin_main.ll
-    ./a.out < bin/$test_name/input.txt > bin/$test_name/output_actual.txt
-    diff bin/$test_name/output_actual.txt bin/$test_name/output_expected.txt
+    clang main.c test/$test_name/dolphin_main.ll
+    ./a.out < test/$test_name/input.txt > test/$test_name/output_actual.txt
+    diff test/$test_name/output_actual.txt test/$test_name/output_expected.txt
     if [ $? -ne 0 ]; then
         echo "diff reports that expected and actual output are different"
         rm a.out

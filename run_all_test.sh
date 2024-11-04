@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NUM_TEST=22
+NUM_TEST=2
 
 for i in $(seq 1 $NUM_TEST)
 do

@@ -1,0 +1,3 @@
+(library
+ (name testUtils)
+ (libraries printbox printbox-text srcProcessor lib))

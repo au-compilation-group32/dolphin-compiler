@@ -8,7 +8,7 @@
   ; (flags -la 2 -lc 2 -O 2 --comment --dump-resolved)
 )
 
-(executable
+(library
   (name srcProcessor)
   (libraries lib)
 )
