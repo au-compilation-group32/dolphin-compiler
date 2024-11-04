@@ -75,7 +75,10 @@ exp:
 | TRUE {Ast.Boolean {bool = true; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | FALSE {Ast.Boolean {bool = false; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = exp o = binop r = exp {Ast.BinOp{left = l; op = o; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| l = exp o = unop r = exp {Ast.UnOp{op = o; operand = exp; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = lval {Ast.Lval l}
+| l = exp o = assignment r = exp {Ast.Assignment{lvl = l; rhs = exp; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| l = exp o = call r = exp {Ast.Call{fname = id; args = expList; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 lval:
 | i = IDENT {Ast.Var (Ast.Ident {name = i; loc = {start_pos = $startpos; end_pos = $endpos}})}
