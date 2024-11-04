@@ -75,10 +75,10 @@ exp:
 | TRUE {Ast.Boolean {bool = true; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | FALSE {Ast.Boolean {bool = false; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = exp o = binop r = exp {Ast.BinOp{left = l; op = o; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| l = exp o = unop r = exp {Ast.UnOp{op = o; operand = exp; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| o = unop ex = exp {Ast.UnOp{op = o; operand = ex; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = lval {Ast.Lval l}
-| l = exp o = assignment r = exp {Ast.Assignment{lvl = l; rhs = exp; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| l = exp o = call r = exp {Ast.Call{fname = id; args = expList; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| l = lval ex = expr {Ast.Assignment{lvl = l; rhs = ex; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| id = ident expList = expr list {Ast.Call{fname = id; args = expList; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 lval:
 | i = IDENT {Ast.Var (Ast.Ident {name = i; loc = {start_pos = $startpos; end_pos = $endpos}})}
@@ -98,6 +98,7 @@ stm:
 | IF LPAREN c = exp RPAREN t = stm {Ast.IfThenElseStm{cond = c; thbr = t; elbro = None; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | IF LPAREN c = exp RPAREN t = stm ELSE e = stm {Ast.IfThenElseStm{cond = c; thbr = t; elbro = Some e; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | WHILE LPAREN c = exp RPAREN t = stm {Ast.WhileStm{cond = c; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| FOR LPAREN i = for_init option c = expr option u = expr option RPAREN t = stm {Ast.ForStm{init = i; cond = c; update = u; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | BREAK SEMICOLON {Ast.BreakStm{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | CONTINUE SEMICOLON {Ast.ContinueStm{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | cs = compound_stm {Ast.CompoundStm{stms = cs; loc = {start_pos = $startpos; end_pos = $endpos}}}
