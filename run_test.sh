@@ -2,7 +2,7 @@
 
 test_name=$1
 
-dune exec test/$test_name/testCase.exe
+dune exec bin/runTest.exe $test_name
 
 if [ $? -ne 0 ]; then
     echo "Semantics analysis failed, comparing error lists:"

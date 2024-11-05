@@ -1,10 +1,10 @@
 #!/bin/bash
 
-NUM_TEST=2
+NUM_TEST=22
 
 for i in $(seq 1 $NUM_TEST)
 do
-    bash run_test.sh test$i
+    bash run_test.sh test/test$i
     if [ $? -ne 0 ]; then
         echo "test$i failed"
         exit 1
