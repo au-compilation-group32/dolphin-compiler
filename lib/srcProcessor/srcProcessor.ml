@@ -3,7 +3,14 @@ module Pretty = Lib.Pretty
 module Location = Lib.Location
 module Lexer = Lexer
 module Parser = Parser
+module Errors = Lib.Errors
  
+exception Unimplemented
+
+type lexResult =
+| LexSuccess of Ast.statement list
+| LexFailure of Errors.error
+
 let get_loc_from_stm = function 
   | Ast.ExprStm {expr = _; loc} -> loc
   | Ast.VarDeclStm (Ast.DeclBlock{declarations = _; loc}) -> loc
@@ -26,7 +33,12 @@ let rec print_loc_list = function
 let src_file_to_ast file_name = 
   let file = open_in file_name in
   let buffer = Lexing.from_channel file in
-  Parser.prog Lexer.token buffer
+  try
+    let result = Parser.prog Lexer.token buffer in
+    LexSuccess result
+  with
+  | Lexer.UnexpectedCharacter (loc, c) -> LexFailure (Errors.LexerUnexpectedCharacter {loc = loc; c = c})
+  | Lexer.IntegerOutOfRange(loc, str) -> LexFailure (Errors.LexerIntegerOutOfRange{loc = loc; str = str})
 
 (* let _ = 
   let file = open_in "lib/srcProcessor/test.dolphin" in

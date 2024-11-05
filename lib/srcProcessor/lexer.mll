@@ -1,6 +1,8 @@
 {
   open Parser
-  exception Error of string
+  open Lib.Location
+  exception UnexpectedCharacter of location*char
+  exception IntegerOutOfRange of location*string
 }
 
 
@@ -54,7 +56,15 @@ rule token = parse
 | "byte" {BYTE}
 | "void" {VOID}
 | "record" {RECORD}
-| ['0'-'9']+ as i { INT_LIT (Int64.of_string i) }
+| ['0'-'9']+ as s {
+    let loc = {start_pos = (Lexing.lexeme_start_p lexbuf); end_pos = (Lexing.lexeme_end_p lexbuf)} in
+    match Int64.of_string_opt s with
+    | None -> raise (IntegerOutOfRange(loc, s))
+    | Some i -> INT_LIT i
+  }
 | '"'[^'"']*'"' as s {STRING_LIT s}
 | ['a'-'z' 'A'-'Z' '_']['0'-'9' 'a'-'z' 'A'-'Z' '_']* as s {IDENT (s)}
-| _ as c {raise (Error (Printf.sprintf "unexpected character %c\n" c))}
+| _ as c {
+    let loc = {start_pos = (Lexing.lexeme_start_p lexbuf); end_pos = (Lexing.lexeme_end_p lexbuf)} in
+    raise (UnexpectedCharacter (loc, c))
+  }

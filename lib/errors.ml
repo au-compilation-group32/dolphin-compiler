@@ -18,7 +18,8 @@ type error =
 | InvalidVoidType of {loc: Location.location; sym: Sym.symbol}
 | InvalidVoidTypeOperand of {loc: Location.location}
 | BreakOrContinueOutsideLoop of {loc: Location.location}
-(* other errors to be added as needed. *)
+| LexerUnexpectedCharacter of {loc: Location.location; c: char}
+| LexerIntegerOutOfRange of {loc: Location.location; str: string}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -34,3 +35,5 @@ let error_to_string err =
   | InvalidVoidType {loc; sym} -> Printf.sprintf "%s: Identifier %s has invalid type void." (loc_to_string loc) (Sym.name sym)
   | InvalidVoidTypeOperand {loc} -> Printf.sprintf "%s: Operand has invalid type void." (loc_to_string loc)
   | BreakOrContinueOutsideLoop {loc} -> Printf.sprintf "%s: Break or continue statement must be inside a loop." (loc_to_string loc)
+  | LexerUnexpectedCharacter {loc; c} -> Printf.sprintf "%s: Unexpected character %c." (loc_to_string loc) c
+  | LexerIntegerOutOfRange {loc; str} -> Printf.sprintf "%s: Integer %s is out of int64 range." (loc_to_string loc) str
