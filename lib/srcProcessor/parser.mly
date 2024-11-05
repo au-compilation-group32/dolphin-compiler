@@ -100,14 +100,9 @@ decl_list:
 | d = single_decl {[d]}
 | d = single_decl COMMA dl = decl_list {d::dl}
 
-for_init_opt:
-| {None}
-| e = exp {Some(Ast.FIExpr e)}
-| VAR dl = decl_list {Some(Ast.FIDecl (Ast.DeclBlock{declarations = dl; loc = {start_pos = $startpos; end_pos = $endpos}}))}
-
-exp_opt:
-| {None}
-| e = exp {Some(e)}
+for_init:
+| e = exp {Ast.FIExpr e}
+| VAR dl = decl_list {Ast.FIDecl (Ast.DeclBlock{declarations = dl; loc = {start_pos = $startpos; end_pos = $endpos}})}
 
 stm:
 | VAR dl = decl_list SEMICOLON {Ast.VarDeclStm (Ast.DeclBlock {declarations = dl; loc = {start_pos = $startpos; end_pos = $endpos}})}
@@ -116,7 +111,7 @@ stm:
 | IF LPAREN c = exp RPAREN t = stm {Ast.IfThenElseStm{cond = c; thbr = t; elbro = None; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | IF LPAREN c = exp RPAREN t = stm ELSE e = stm {Ast.IfThenElseStm{cond = c; thbr = t; elbro = Some e; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | WHILE LPAREN c = exp RPAREN t = stm {Ast.WhileStm{cond = c; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| FOR LPAREN i = for_init_opt SEMICOLON c = exp_opt SEMICOLON u = exp_opt RPAREN t = stm {Ast.ForStm{init = i; cond = c; update = u; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| FOR LPAREN i = for_init? SEMICOLON c = exp? SEMICOLON u = exp? RPAREN t = stm {Ast.ForStm{init = i; cond = c; update = u; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | BREAK SEMICOLON {Ast.BreakStm{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | CONTINUE SEMICOLON {Ast.ContinueStm{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | cs = compound_stm {Ast.CompoundStm{stms = cs; loc = {start_pos = $startpos; end_pos = $endpos}}}
