@@ -2,32 +2,35 @@
 module Sym = Symbol
 module TAst = TypedAst
 module TPretty = TypedPretty
+module Location = Location
+
+let loc_to_string loc = PrintBox_text.to_string (Location.location_to_tree ~includefile:false loc)
 
 type error =
-| TypeMismatch of {expected : TAst.typ; actual : TAst.typ}
-| ShouldBeCallOrAssignment of {expr : TAst.expr}
+| TypeMismatch of {loc: Location.location; expected : TAst.typ; actual : TAst.typ}
+| ShouldBeCallOrAssignment of {loc: Location.location}
 | NoReturn
-| LValueNotFound of {sym: Sym.symbol}
-| LValueInvalid of {sym: Sym.symbol}
-| FunctionUndeclared of {sym: Sym.symbol}
-| FunctionNameInvalid of {sym: Sym.symbol}
-| FunctionParamCountMismatch of {sym: Sym.symbol; expected: int; actual: int}
-| InvalidVoidType of {sym: Sym.symbol}
-| InvalidVoidTypeOperand of {expr : Ast.expr}
-| BreakOrContinueOutsideLoop
+| LValueNotFound of {loc: Location.location; sym: Sym.symbol}
+| LValueInvalid of {loc: Location.location; sym: Sym.symbol}
+| FunctionUndeclared of {loc: Location.location; sym: Sym.symbol}
+| FunctionNameInvalid of {loc: Location.location; sym: Sym.symbol}
+| FunctionParamCountMismatch of {loc: Location.location; sym: Sym.symbol; expected: int; actual: int}
+| InvalidVoidType of {loc: Location.location; sym: Sym.symbol}
+| InvalidVoidTypeOperand of {loc: Location.location}
+| BreakOrContinueOutsideLoop of {loc: Location.location}
 (* other errors to be added as needed. *)
 
 (* Useful for printing errors *)
 let error_to_string err =
   match err with
-  | TypeMismatch {expected; actual; _} -> Printf.sprintf "Type mismatch: expected %s but found %s." (TPretty.typ_to_string expected) (TPretty.typ_to_string actual)
-  | LValueNotFound {sym; _} -> Printf.sprintf "LValue %s not found." (Sym.name sym) 
-  | LValueInvalid {sym; _} -> Printf.sprintf "LValue %s is invalid." (Sym.name sym)
-  | FunctionUndeclared {sym; _} -> Printf.sprintf "Undeclared function %s." (Sym.name sym)
-  | FunctionNameInvalid {sym; _} -> Printf.sprintf "Expect function name, but %s is a var name." (Sym.name sym)
-  | FunctionParamCountMismatch{sym; expected; actual; _} -> Printf.sprintf "Function %s expects %d params, but is given %d params." (Sym.name sym) expected actual
-  | ShouldBeCallOrAssignment {expr = _} -> Printf.sprintf "Expression Statement must be either Call or Assignment"
+  | TypeMismatch {loc; expected; actual} -> Printf.sprintf "%s: Type mismatch: expected %s but found %s." (loc_to_string loc) (TPretty.typ_to_string expected) (TPretty.typ_to_string actual)
+  | LValueNotFound {loc; sym} -> Printf.sprintf "%s: LValue %s not found." (loc_to_string loc) (Sym.name sym) 
+  | LValueInvalid {loc; sym} -> Printf.sprintf "%s: LValue %s is invalid." (loc_to_string loc) (Sym.name sym)
+  | FunctionUndeclared {loc; sym} -> Printf.sprintf "%s: Undeclared function %s." (loc_to_string loc) (Sym.name sym)
+  | FunctionNameInvalid {loc; sym} -> Printf.sprintf "%s: Expect function name, but %s is a var name." (loc_to_string loc) (Sym.name sym)
+  | FunctionParamCountMismatch{loc; sym; expected; actual} -> Printf.sprintf "%s: Function %s expects %d params, but is given %d params." (loc_to_string loc) (Sym.name sym) expected actual
+  | ShouldBeCallOrAssignment {loc} -> Printf.sprintf "%s: Expression Statement must be either Call or Assignment" (loc_to_string loc)
   | NoReturn -> Printf.sprintf "Program has no return."
-  | InvalidVoidType {sym; _} -> Printf.sprintf "Identifier %s has invalid type void." (Sym.name sym)
-  | InvalidVoidTypeOperand {expr; _} -> Printf.sprintf "Operand has invalid type void."
-  | BreakOrContinueOutsideLoop -> Printf.sprintf "Break or continue statement must be inside a loop."
+  | InvalidVoidType {loc; sym} -> Printf.sprintf "%s: Identifier %s has invalid type void." (loc_to_string loc) (Sym.name sym)
+  | InvalidVoidTypeOperand {loc} -> Printf.sprintf "%s: Operand has invalid type void." (loc_to_string loc)
+  | BreakOrContinueOutsideLoop {loc} -> Printf.sprintf "%s: Break or continue statement must be inside a loop." (loc_to_string loc)
