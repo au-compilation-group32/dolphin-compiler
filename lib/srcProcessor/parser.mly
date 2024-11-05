@@ -39,9 +39,13 @@
 %}
 
 %start <Ast.statement list> prog
-
-// %left PLUS
-
+%left PLUS MINUS
+%left MUL DIV REM
+%left LOR
+%left LAND
+%left LNOT
+%nonassoc LT LE GT GE EQ NEQ
+%nonassoc ASSIGN
 %%
 
 id:
@@ -51,7 +55,7 @@ tp:
 | INT {Ast.Int {loc = {start_pos = $startpos; end_pos = $endpos}}}
 | BOOL {Ast.Bool {loc = {start_pos = $startpos; end_pos = $endpos}}}
 
-binop:
+%inline binop:
 | PLUS {Ast.Plus{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | MINUS {Ast.Minus{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | MUL {Ast.Mul{loc = {start_pos = $startpos; end_pos = $endpos}}}
@@ -66,8 +70,8 @@ binop:
 | EQ {Ast.Eq{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | NEQ {Ast.NEq{loc = {start_pos = $startpos; end_pos = $endpos}}}
 
-unop:
-// | MINUS {Ast.Neg{loc = {start_pos = $startpos; end_pos = $endpos}}}
+%inline unop:
+| MINUS {Ast.Neg{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | LNOT {Ast.Lnot{loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 exp_list:
@@ -75,6 +79,7 @@ exp_list:
 |                             {[]}
 
 exp:
+| LPAREN e = exp RPAREN {e}
 | i = INT_LIT {Ast.Integer {int = i; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | TRUE {Ast.Boolean {bool = true; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | FALSE {Ast.Boolean {bool = false; loc = {start_pos = $startpos; end_pos = $endpos}}}
