@@ -17,7 +17,7 @@ bash run_test.sh <test_name>
 For example
 
 ```
-bash run_test.sh test1
+bash run_test.sh test/test1
 ```
 
 Or you can run all tests by

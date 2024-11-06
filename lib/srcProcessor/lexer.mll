@@ -10,7 +10,7 @@
 rule token = parse
 | [' ' '\t'] {token lexbuf}
 | '\n' {Lexing.new_line lexbuf; token lexbuf}
-| "//"[^'\n']*['\n']{Lexing.new_line lexbuf; token lexbuf}
+| "//" {line_comment lexbuf}
 | "/*" {block_comment 1 lexbuf}
 | "*/" {
     let loc = {start_pos = (Lexing.lexeme_start_p lexbuf); end_pos = (Lexing.lexeme_end_p lexbuf)} in
@@ -88,3 +88,8 @@ and block_comment depth = parse
     raise (UnmatchedBlockComment(loc, "eof"))
   }
 | _ {block_comment depth lexbuf}
+
+and line_comment = parse
+| eof {EOF}
+| '\n' {Lexing.new_line lexbuf; token lexbuf}
+| _ {line_comment lexbuf}
