@@ -3,6 +3,7 @@
     x = print_integer(x);
     var y = print_integer(x), y : int = print_integer(x);
 
+    x = (print_integer(x) == x);
     x = print_integer(x) == x;
 
     return true;

@@ -39,13 +39,7 @@ let src_file_to_ast file_name =
   with
   | Lexer.UnexpectedCharacter (loc, c) -> LexFailure (Errors.LexerUnexpectedCharacter {loc = loc; c = c})
   | Lexer.IntegerOutOfRange(loc, str) -> LexFailure (Errors.LexerIntegerOutOfRange{loc = loc; str = str})
-
-(* let _ = 
-  let file = open_in "lib/srcProcessor/test.dolphin" in
-  let buffer = Lexing.from_channel file in
-  let prog = Parser.prog Lexer.token buffer in
-  let _ = PrintBox_text.output stdout (Pretty.program_to_tree prog) in
-  let _ = Printf.printf "\n==========================\n" in
-  let _ = Printf.printf "Location of stms :\n" in
-  let _ = print_loc_list prog in
-  Printf.printf "\n" *)
+  | Parser.Error ->
+    let loc = Location.{start_pos = (Lexing.lexeme_start_p buffer); end_pos = (Lexing.lexeme_end_p buffer)} in
+    let c = Lexing.lexeme_char buffer 0 in
+    LexFailure (Errors.ParserSyntaxError{loc = loc; c = c})
