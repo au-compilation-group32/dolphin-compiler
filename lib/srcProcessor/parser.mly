@@ -76,7 +76,7 @@ tp:
 
 exp_list:
 | e = exp COMMA el = exp_list {e::el}
-|                             {[]}
+| e = exp                     {[e]}
 
 exp:
 | LPAREN e = exp RPAREN {e}
