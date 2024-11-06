@@ -137,7 +137,7 @@ and typecheck_expr env expr tp =
 
 let typecheck_var_delc env var = match var with
 | Declaration {name; tp; body; loc} -> 
-  let decl_sym = let Ast.Ident{name = s; loc = sym_loc} = name in Sym.symbol s in
+  let decl_sym = let Ast.Ident{name = s; loc = _} = name in Sym.symbol s in
   let typed_body, body_tp, body_loc = infertype_expr env body in
   let _ = 
     if body_tp = TAst.Void
@@ -195,7 +195,7 @@ let rec typecheck_statement env stm =
     let inside_loop_env = Env.enter_loop env in
     let b, _ = typecheck_statement inside_loop_env body in
     TAst.WhileStm {cond = c; body =b}, env 
-  | Ast.ForStm { init : for_init option; cond : expr option; update : expr option; body : statement; loc : Loc.location } -> 
+  | Ast.ForStm { init; cond; update; body; loc = _} -> 
     let ini, newEnv = begin match init with
     | None -> None, env
     | Some FIExpr i -> 
@@ -204,7 +204,7 @@ let rec typecheck_statement env stm =
       Some forExpr, env
     | Some FIDecl declaration_block -> 
       begin match declaration_block with
-      | DeclBlock {declarations : single_declaration list; loc : Loc.location} -> 
+      | DeclBlock {declarations; loc = _} -> 
         let forD, newE = typecheck_var_delcs env declarations in
         let forDe = TAst.DeclBlock forD in
         let forDecl = TAst.FIDecl forDe in
@@ -228,7 +228,7 @@ let rec typecheck_statement env stm =
     TAst.ForStm{init = ini; cond =con; update =upd; body = stat}, env
   | Ast.VarDeclStm declaration_block -> 
     begin match declaration_block with
-    | DeclBlock {declarations : single_declaration list; loc : Loc.location} -> 
+    | DeclBlock {declarations; loc = _} -> 
       let dlst, e = typecheck_var_delcs env declarations in 
       let decl = TAst.DeclBlock dlst in
       TAst.VarDeclStm decl, e
