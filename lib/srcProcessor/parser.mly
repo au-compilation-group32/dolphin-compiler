@@ -39,13 +39,13 @@
 %}
 
 %start <Ast.statement list> prog
+%right ASSIGN
 %left PLUS MINUS
 %left MUL DIV REM
 %left LOR
 %left LAND
 %left LNOT
 %nonassoc LT LE GT GE EQ NEQ
-%nonassoc ASSIGN
 %%
 
 id:
