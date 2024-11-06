@@ -39,6 +39,7 @@ let src_file_to_ast file_name =
   with
   | Lexer.UnexpectedCharacter (loc, c) -> LexFailure (Errors.LexerUnexpectedCharacter {loc = loc; c = c})
   | Lexer.IntegerOutOfRange(loc, str) -> LexFailure (Errors.LexerIntegerOutOfRange{loc = loc; str = str})
+  | Lexer.UnmatchedBlockComment(loc, str) -> LexFailure (Errors.LexerUnmatchedBlockComment{loc = loc; str = str})
   | Parser.Error ->
     let loc = Location.{start_pos = (Lexing.lexeme_start_p buffer); end_pos = (Lexing.lexeme_end_p buffer)} in
     let c = Lexing.lexeme_char buffer 0 in

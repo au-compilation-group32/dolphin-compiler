@@ -3,6 +3,7 @@
   open Lib.Location
   exception UnexpectedCharacter of location*char
   exception IntegerOutOfRange of location*string
+  exception UnmatchedBlockComment of location*string
 }
 
 
@@ -10,6 +11,11 @@ rule token = parse
 | [' ' '\t'] {token lexbuf}
 | '\n' {Lexing.new_line lexbuf; token lexbuf}
 | "//"[^'\n']*['\n']{Lexing.new_line lexbuf; token lexbuf}
+| "/*" {block_comment 1 lexbuf}
+| "*/" {
+    let loc = {start_pos = (Lexing.lexeme_start_p lexbuf); end_pos = (Lexing.lexeme_end_p lexbuf)} in
+    raise (UnmatchedBlockComment(loc, "*/"))
+}
 | eof   {EOF}
 | "true" {TRUE}
 | "false" {FALSE}
@@ -69,3 +75,16 @@ rule token = parse
     let loc = {start_pos = (Lexing.lexeme_start_p lexbuf); end_pos = (Lexing.lexeme_end_p lexbuf)} in
     raise (UnexpectedCharacter (loc, c))
   }
+
+and block_comment depth = parse
+| "*/" {
+    if depth = 1
+    then token lexbuf
+    else block_comment (depth-1) lexbuf
+  }
+| "/*" {block_comment (depth+1) lexbuf}
+| eof {
+    let loc = {start_pos = (Lexing.lexeme_start_p lexbuf); end_pos = (Lexing.lexeme_end_p lexbuf)} in
+    raise (UnmatchedBlockComment(loc, "eof"))
+  }
+| _ {block_comment depth lexbuf}
