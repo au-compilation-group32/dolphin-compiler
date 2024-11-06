@@ -40,4 +40,4 @@ let error_to_string err =
   | LexerUnexpectedCharacter {loc; c} -> Printf.sprintf "%s: Unexpected character %c." (loc_to_string loc) c
   | LexerIntegerOutOfRange {loc; str} -> Printf.sprintf "%s: Integer %s is out of int64 range." (loc_to_string loc) str
   | LexerUnmatchedBlockComment {loc; str} -> Printf.sprintf "%s: Unmatched block comment %s." (loc_to_string loc) str
-  | ParserSyntaxError {loc; c} -> Printf.sprintf "%s: Syntax error %c." (loc_to_string loc) c
+  | ParserSyntaxError {loc; c} -> Printf.sprintf "%s: Syntax error near \'%c\'." (loc_to_string loc) c

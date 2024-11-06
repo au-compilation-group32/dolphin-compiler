@@ -18,8 +18,8 @@ let handle_errors test_dir errors =
   close_out oc;
   exit 1
 let run_testcase test_dir = 
-  let _ = Printf.printf "======================================\n" in
-  let _ = Printf.printf "RUNNING TEST ON %s\n" test_dir in
+  let _ = Printf.printf "\n============================================================================\n" in
+  let _ = Printf.printf "RUNNING TEST ON %s/main.dlp \n" test_dir in
   match SrcProcessor.src_file_to_ast (test_dir ^ "/main.dlp") with
   | LexFailure error -> handle_errors test_dir [error]
   | LexSuccess prog -> 

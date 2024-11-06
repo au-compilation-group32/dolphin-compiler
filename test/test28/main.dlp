@@ -1,0 +1,2 @@
+    // invalid ident
+    var 1a = 0;

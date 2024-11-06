@@ -1,0 +1,1 @@
+[36m@ 2:8-9[0m: Syntax error near '1'.
