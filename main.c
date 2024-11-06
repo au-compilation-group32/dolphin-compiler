@@ -18,6 +18,6 @@ int64_t read_integer () {
     return value;
 }
 
-void print_integer (int x) {
-    printf ("%d\n", x);
+void print_integer (int64_t x) {
+    printf ("%ld\n", x);
 }
