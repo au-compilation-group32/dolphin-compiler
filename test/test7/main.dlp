@@ -1,0 +1,52 @@
+    //Negative scope Test
+    var x = 1;
+
+    if (x == 3) {
+        print_integer(y);
+    }
+
+    if (x == y=x+2) {
+        print_integer(y);
+    }
+
+    if (x == 3) {
+        var y = x = x+2;
+        print_integer(y);
+        if (true) {
+            if (true) {
+                var z = 1;
+                print_integer(x);
+                print_integer(y);
+                print_integer(z);
+            }
+        }
+        print_integer(x);
+        print_integer(y);
+        print_integer(z);
+    }
+
+    if (true) {
+        var y = x = x+2;
+        print_integer(y);
+        if (true) {
+            if (true) {
+                var y = false;
+                var z = 1;
+                print_integer(y+z);
+                var y = 1;
+                print_integer(y+z);
+                var y = false;
+            }
+            print_integer(x);
+            print_integer(y);
+            print_integer(z);
+            print_integer(x+y);
+            var y = false;
+            print_integer(x+y);
+        }
+    }
+
+    print_integer(x);
+    print_integer(y);
+    print_integer(z);
+    return x;

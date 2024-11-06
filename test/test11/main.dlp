@@ -1,0 +1,9 @@
+    // nested assignment
+    var x = 100, y = 69, z = 419, t = 10;
+    x = y = z = t;
+
+    print_integer(x);
+    print_integer(y);
+    print_integer(z);
+    print_integer(t);
+    return 0;

@@ -1,0 +1,25 @@
+    // Test arithmetic binop
+    var x = read_integer();
+    print_integer(x);
+    var y = read_integer();
+    print_integer(y);
+    var z = read_integer();
+    print_integer(z);
+    var t = read_integer();
+    print_integer(t);
+
+    print_integer(x+y);
+
+    print_integer(x-y);
+    print_integer(x-z);
+
+    print_integer(x*y);
+
+    print_integer(x/y);
+    print_integer(x%y);
+    print_integer(x/z);
+    print_integer(x%z);
+    print_integer(x/t);
+    print_integer(x%t);
+
+    return 0;

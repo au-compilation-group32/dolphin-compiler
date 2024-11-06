@@ -1,0 +1,53 @@
+    //Positive scope Test
+    var x = read_integer();
+    print_integer(x);
+    var y = read_integer();
+    print_integer(y);
+    var z = read_integer();
+    print_integer(z);
+
+    if (true) {
+        var y = read_integer();
+        print_integer(y);
+    }
+    print_integer(y);
+
+    if (x <= y=x+2) {
+        print_integer(y);
+        var y = read_integer();
+        print_integer(y);
+    }
+    print_integer(y);
+
+    if (true) {
+        var y = read_integer();
+        print_integer(y);
+
+        if (true) {
+            if (true) {
+                var z = read_integer();
+                print_integer(z);
+
+                print_integer(x);
+                print_integer(y);
+                print_integer(z);
+
+                x = 200;
+                y = 693;
+                print_integer(x);
+                print_integer(y);
+                print_integer(z);
+            }
+            var z = read_integer();
+            print_integer(z);
+            print_integer(x);
+            print_integer(y);
+            print_integer(z);
+           
+        }
+    }
+
+    print_integer(x);
+    print_integer(y);
+    print_integer(z);
+    return x;

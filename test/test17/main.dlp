@@ -1,0 +1,42 @@
+    // loops with continue and break
+    for (var i = 0; ; i = i+1) {
+        if (i >= 10)
+            break;
+        else {
+            if (i%2 == 0) {
+                print_integer(i);
+            } else {
+                print_integer(i*10);
+                continue;
+            }
+            print_integer(i);
+        }
+    }
+
+    for (var i = 0; i < 10; i = i+1) {
+        if (i%2 == 0) {
+            print_integer(i);
+        } else {
+            print_integer(i*10);
+            continue;
+        }
+        print_integer(i);
+    }
+
+    var i = 0;
+    while (true) {
+        if (i >= 10)
+            break;
+        else {
+            if (i%2 == 0) {
+                i = i+1;
+                print_integer(i);
+            } else {
+                i = i+1;
+                print_integer(i*10);
+                continue;
+            }
+        }
+        print_integer(i);
+    }
+    return 0;

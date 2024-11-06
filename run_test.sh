@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export OCAMLRUNPARAM=b
+
 test_name=$1
 
 dune exec bin/runTest.exe $test_name

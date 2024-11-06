@@ -1,0 +1,9 @@
+    // while loop with always true
+    var i = 0;
+    while (true) {
+        if (i >= 5)
+            break;
+        print_integer(i);
+        i = i+1;
+    }
+    return 0;

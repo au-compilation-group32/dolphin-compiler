@@ -1,0 +1,17 @@
+    //Test unop
+    var x = read_integer();
+    print_integer(x);
+    var y = read_integer();
+    print_integer(y);
+
+    print_integer(-x);
+
+    if (!x>=y)
+        print_integer(x);
+    else print_integer(-x);
+
+    if (!x<=y)
+        print_integer(x);
+    else print_integer(-x);
+
+    return 0;

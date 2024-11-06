@@ -1,9 +1,9 @@
-LValue int_y not found.
-LValue int_y not found.
-LValue int_y not found.
-LValue int_z not found.
-Type mismatch: expected int but found bool.
-LValue int_z not found.
-Type mismatch: expected int but found bool.
-LValue int_y not found.
-LValue int_z not found.
+[36m@ 5:22-23[0m: LValue y not found.
+[36m@ 8:13-14[0m: LValue y not found.
+[36m@ 9:22-23[0m: LValue y not found.
+[36m@ 25:22-23[0m: LValue z not found.
+[36m@ 35:30-31[0m: Type mismatch: expected int but found bool.
+[36m@ 42:26-27[0m: LValue z not found.
+[36m@ 45:28-29[0m: Type mismatch: expected int but found bool.
+[36m@ 50:18-19[0m: LValue y not found.
+[36m@ 51:18-19[0m: LValue z not found.

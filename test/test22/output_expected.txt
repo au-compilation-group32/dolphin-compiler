@@ -1,11 +1,11 @@
-LValue int_i not found.
-LValue int_j not found.
-LValue int_k not found.
-LValue int_i not found.
-LValue int_j not found.
-LValue int_k not found.
-LValue int_i not found.
-LValue int_j not found.
-LValue int_k not found.
-LValue int_j not found.
-LValue int_k not found.
+[36m@ 19:18-19[0m: LValue i not found.
+[36m@ 20:18-19[0m: LValue j not found.
+[36m@ 21:18-19[0m: LValue k not found.
+[36m@ 41:18-19[0m: LValue i not found.
+[36m@ 42:18-19[0m: LValue j not found.
+[36m@ 43:18-19[0m: LValue k not found.
+[36m@ 63:18-19[0m: LValue i not found.
+[36m@ 64:18-19[0m: LValue j not found.
+[36m@ 65:18-19[0m: LValue k not found.
+[36m@ 86:18-19[0m: LValue j not found.
+[36m@ 87:18-19[0m: LValue k not found.

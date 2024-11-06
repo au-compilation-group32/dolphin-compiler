@@ -1,0 +1,104 @@
+    // positive test: loop scope and shadowing behavior
+    var i = 6;
+    var j = 69;
+    var k = 419;
+
+    for (var i = 0; i < 2; i = i+1) {
+        for (var j = 0; j < 2; j = j+1) {
+            for (var k = 0; k < 2; k = k+1) {
+                if (k%2 == 0) {
+                    print_integer(i);
+                    print_integer(j);
+                    print_integer(k);
+                } else {
+                    print_integer(i*10);
+                    print_integer(j*10);
+                    print_integer(k*10);
+                }
+            }
+        }
+    }
+
+    print_integer(i);
+    print_integer(j);
+    print_integer(k);
+
+    var i = 6;
+    var j = 69;
+    var k = 419;
+ 
+    var i = 0;
+    while (i < 2) {
+        for (var j = 0; j < 2; j = j+1) {
+            for (var k = 0; k < 2; k = k+1) {
+                if (k%2 == 0) {
+                    print_integer(i);
+                    print_integer(j);
+                    print_integer(k);
+                } else {
+                    print_integer(i*10);
+                    print_integer(j*10);
+                    print_integer(k*10);
+                }               
+            }
+        }
+        i = i+1;
+    }
+
+    print_integer(i);
+    print_integer(j);
+    print_integer(k);
+    
+    var i = 6;
+    var j = 69;
+    var k = 419;
+ 
+    for (var i = 0; i < 2; i = i+1) {
+        var j = 0;
+        while (j<2) {
+            for (var k = 0; k < 2; k = k+1) {
+                if (k%2 == 0) {
+                    print_integer(i);
+                    print_integer(j);
+                    print_integer(k);
+                } else {
+                    print_integer(i*10);
+                    print_integer(j*10);
+                    print_integer(k*10);
+                }                       
+            }
+            j = j+1;
+        }
+    }
+
+    print_integer(i);
+    print_integer(j);
+    print_integer(k);
+    
+    var i = 6;
+    var j = 69;
+    var k = 419;
+ 
+    for (var i = 0; i < 2; i = i+1) {
+        for (var j = 0; j < 2; j = j+1) {
+            var k = 0;
+            while (k<2) {
+                if (k%2 == 0) {
+                    print_integer(i);
+                    print_integer(j);
+                    print_integer(k);
+                } else {
+                    print_integer(i*10);
+                    print_integer(j*10);
+                    print_integer(k*10);
+                }                                        
+                k = k+1;
+            }
+        }
+    }
+
+    print_integer(i);
+    print_integer(j);
+    print_integer(k);
+    
+    return 0;

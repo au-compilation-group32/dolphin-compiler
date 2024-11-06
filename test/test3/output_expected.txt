@@ -1,1 +1,1 @@
-Type mismatch: expected int but found bool.
+[36m@ 1:11-15[0m: Type mismatch: expected int but found bool.

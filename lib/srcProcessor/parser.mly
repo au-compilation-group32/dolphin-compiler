@@ -39,6 +39,8 @@
 %}
 
 %start <Ast.statement list> prog
+// %nonassoc LPAREN RPAREN
+%nonassoc COMMA
 %right ASSIGN
 %left PLUS MINUS
 %left MUL DIV REM
@@ -74,9 +76,9 @@ tp:
 | MINUS {Ast.Neg{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | LNOT {Ast.Lnot{loc = {start_pos = $startpos; end_pos = $endpos}}}
 
-exp_list:
-| e = exp COMMA el = exp_list {e::el}
-| e = exp                     {[e]}
+// exp_list:
+// {[]}
+// | e = exp COMMA el = exp_list {e::el}
 
 exp:
 | LPAREN e = exp RPAREN {e}
@@ -87,7 +89,7 @@ exp:
 | o = unop ex = exp {Ast.UnOp{op = o; operand = ex; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = lval {Ast.Lval l}
 | l = lval ASSIGN ex = exp {Ast.Assignment{lvl = l; rhs = ex; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| i = id LPAREN expList = exp_list RPAREN {Ast.Call{fname = i; args = expList; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| i = id LPAREN expList = separated_list(COMMA, exp) RPAREN {Ast.Call{fname = i; args = expList; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 lval:
 | i = IDENT {Ast.Var (Ast.Ident {name = i; loc = {start_pos = $startpos; end_pos = $endpos}})}

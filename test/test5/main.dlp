@@ -1,0 +1,83 @@
+    //Test short-circuiting
+
+    var x = 100, y = 69, z = 419, t = 10;
+    // false || false
+    if (x <= y || x <= z=t) {
+        print_integer(x);
+        print_integer(z);
+    } else {
+        print_integer(y);
+        print_integer(z);
+    }
+
+    var x = 100, y = 69, z = 419, t = 10;
+    // false || true
+    if (x <= y || x >= z=t) {
+        print_integer(x);
+        print_integer(z);
+    } else {
+        print_integer(y);
+        print_integer(z);
+    }
+
+    var x = 100, y = 69, z = 419, t = 10;
+    // true || false
+    if (x >= y || x <= z=t) {
+        print_integer(x);
+        print_integer(z);
+    } else {
+        print_integer(y);
+        print_integer(z);
+    }
+
+    var x = 100, y = 69, z = 419, t = 10;
+    // true || true
+    if (x >= y || x >= z=t) {
+        print_integer(x);
+        print_integer(z);
+    } else {
+        print_integer(y);
+        print_integer(z);
+    }
+
+    var x = 100, y = 69, z = 419, t = 10;
+    // false && false
+    if (x <= y && x <= z=t) {
+        print_integer(x);
+        print_integer(z);
+    } else {
+        print_integer(y);
+        print_integer(z);
+    }
+
+    var x = 100, y = 69, z = 419, t = 10;
+    // false && true
+    if (x <= y && x >= z=t) {
+        print_integer(x);
+        print_integer(z);
+    } else {
+        print_integer(y);
+        print_integer(z);
+    }
+
+    var x = 100, y = 69, z = 419, t = 10;
+    // true && false
+    if (x >= y && x <= z=t) {
+        print_integer(x);
+        print_integer(z);
+    } else {
+        print_integer(y);
+        print_integer(z);
+    }
+
+    var x = 100, y = 69, z = 419, t = 10;
+    // true && true
+    if (x >= y && x >= z=t) {
+        print_integer(x);
+        print_integer(z);
+    } else {
+        print_integer(y);
+        print_integer(z);
+    }
+
+    return 0;
