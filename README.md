@@ -27,6 +27,8 @@ bash run_all_test.sh
 
 This script will crash if one of the test failed.
 
+I also provide ``compile_prog`` in ``bin/compile.ml``
+
 ### Test structure explanation
 
 There is a function called run_testcase in lib/testUtils.ml that run the test case.

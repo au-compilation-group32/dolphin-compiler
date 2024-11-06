@@ -1,3 +1,8 @@
 (executable
  (name runTest)
  (libraries testUtils))
+
+(executable
+ (name compile)
+ (public_name dolphin_compiler.compile)
+ (libraries lib srcProcessor))
