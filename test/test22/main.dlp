@@ -1,3 +1,4 @@
+int main() {
     // negative test: loop scope of nested loops
 
     for (var i = 0; i < 2; i = i+1) {
@@ -87,3 +88,4 @@
     print_integer(k);
 
     return 0;
+}

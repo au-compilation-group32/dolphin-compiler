@@ -1,3 +1,4 @@
+int main() {
     // while loop
     var i = 0;
     while (i < 5) {
@@ -9,3 +10,4 @@
     }
     print_integer(i);
     return 0;
+}

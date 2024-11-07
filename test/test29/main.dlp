@@ -1,2 +1,4 @@
+int main() {
     // using keyword as ident
     var int = 10;
+}

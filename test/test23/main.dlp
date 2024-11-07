@@ -1,3 +1,4 @@
+int main() {
     // mics positive lexer/parser test
     var x = 1;
     var y = 2, z = x;
@@ -63,3 +64,4 @@
         */
         /**/
     */
+}

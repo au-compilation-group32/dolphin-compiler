@@ -1,1 +1,1 @@
-[36m@ 6:4-5[0m: Syntax error near '}'.
+[36m@ 8:4-10[0m: Syntax error near 'r'.

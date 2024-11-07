@@ -4,7 +4,8 @@ NUM_TEST=42
 
 for i in $(seq 1 $NUM_TEST)
 do
-    bash run_test.sh test/test$i
+    file_name=test/test$i/main.dlp
+    { echo "int main() {"; cat $file_name;echo ""; echo "}"; } > temp && mv temp $file_name
     if [ $? -ne 0 ]; then
         echo "test$i failed"
         exit 1

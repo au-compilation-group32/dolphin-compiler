@@ -1,3 +1,4 @@
+int main() {
     // unmatch brace
     if (true) {
         if (true)
@@ -5,3 +6,4 @@
         }
     }
     return 0;
+}

@@ -1,2 +1,4 @@
+int main() {
     // edge with unop neg
     x = - 9223372036854775808;
+}

@@ -1,3 +1,4 @@
+int main() {
     // Test arithmetic binop
     var x = read_integer();
     print_integer(x);
@@ -23,3 +24,4 @@
     print_integer(x%t);
 
     return 0;
+}

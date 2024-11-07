@@ -1,8 +1,8 @@
-[36m@ 18:4-13[0m: Break or continue statement must be inside a loop.
-[36m@ 19:4-10[0m: Break or continue statement must be inside a loop.
-[36m@ 39:4-13[0m: Break or continue statement must be inside a loop.
-[36m@ 40:4-10[0m: Break or continue statement must be inside a loop.
-[36m@ 60:4-13[0m: Break or continue statement must be inside a loop.
-[36m@ 61:4-10[0m: Break or continue statement must be inside a loop.
-[36m@ 81:4-13[0m: Break or continue statement must be inside a loop.
-[36m@ 82:4-10[0m: Break or continue statement must be inside a loop.
+[36m@ 19:4-13[0m: Break or continue statement must be inside a loop.
+[36m@ 20:4-10[0m: Break or continue statement must be inside a loop.
+[36m@ 40:4-13[0m: Break or continue statement must be inside a loop.
+[36m@ 41:4-10[0m: Break or continue statement must be inside a loop.
+[36m@ 61:4-13[0m: Break or continue statement must be inside a loop.
+[36m@ 62:4-10[0m: Break or continue statement must be inside a loop.
+[36m@ 82:4-13[0m: Break or continue statement must be inside a loop.
+[36m@ 83:4-10[0m: Break or continue statement must be inside a loop.

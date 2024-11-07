@@ -1,3 +1,4 @@
+int main() {
     // Basic positive funtionalities
     var x = 1, y = x = x+2, z = x+y, t = read_integer();
     if (x == 3)
@@ -12,3 +13,4 @@
     print_integer(t);
     print_integer(u);
     return u; 
+}

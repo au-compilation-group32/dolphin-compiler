@@ -56,6 +56,7 @@ id:
 tp:
 | INT {Ast.Int {loc = {start_pos = $startpos; end_pos = $endpos}}}
 | BOOL {Ast.Bool {loc = {start_pos = $startpos; end_pos = $endpos}}}
+| VOID {Ast.Void {loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 %inline binop:
 | PLUS {Ast.Plus{loc = {start_pos = $startpos; end_pos = $endpos}}}
@@ -126,12 +127,24 @@ stm_list:
 | s = stm sl = stm_list {s::sl}
 |                       {[]}
 
-prog:
-  sl = stm_list EOF {
-    let loc = {start_pos = $startpos; end_pos = $endpos} in
-    let name = Ast.Ident {name = "main"; loc = loc} in
-    let ret_tp = Ast.Int {loc = loc} in
-    let body = Ast.FuncBody {stms = sl; loc = loc} in
-    let main = Ast.FuncDecl {name = name; ret_tp = ret_tp; params = []; body = body; loc = loc} in
-    [main]
+func_param:
+  i = id COLON t = tp {Ast.Param {paramname = i; typ = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
+
+func_body:
+  LBRACE sl = stm_list RBRACE {Ast.FuncBody {stms = sl; loc = {start_pos = $startpos; end_pos = $endpos}}}
+
+func_decl:
+  t = tp i = id LPAREN pl = separated_list(COMMA, func_param) RPAREN fb = func_body {
+    Ast.FuncDecl{name = i; ret_tp = t; params = pl; body = fb; loc = {start_pos = $startpos; end_pos = $endpos}}
   }
+
+prog:
+  fl = list(func_decl) EOF {fl}
+  // sl = stm_list EOF {
+  //   let loc = {start_pos = $startpos; end_pos = $endpos} in
+  //   let name = Ast.Ident {name = "main"; loc = loc} in
+  //   let ret_tp = Ast.Int {loc = loc} in
+  //   let body = Ast.FuncBody {stms = sl; loc = loc} in
+  //   let main = Ast.FuncDecl {name = name; ret_tp = ret_tp; params = []; body = body; loc = loc} in
+  //   [main]
+  // }

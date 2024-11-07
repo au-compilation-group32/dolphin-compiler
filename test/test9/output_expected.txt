@@ -1,9 +1,9 @@
-[36m@ 3:4-24[0m: Type mismatch: expected int but found void.
-[36m@ 4:12-28[0m: Identifier y has invalid type void.
-[36m@ 4:40-56[0m: Identifier y has invalid type void.
-[36m@ 4:30-56[0m: Type mismatch: expected int but found void.
-[36m@ 6:9-25[0m: Operand has invalid type void.
-[36m@ 6:4-31[0m: Type mismatch: expected int but found bool.
-[36m@ 7:4-24[0m: Type mismatch: expected int but found void.
-[36m@ 7:4-30[0m: Expression Statement must be either Call or Assignment
-[36m@ 9:11-15[0m: Type mismatch: expected int but found bool.
+[36m@ 4:4-24[0m: Type mismatch: expected int but found void.
+[36m@ 5:12-28[0m: Identifier y has invalid type void.
+[36m@ 5:40-56[0m: Identifier y has invalid type void.
+[36m@ 5:30-56[0m: Type mismatch: expected int but found void.
+[36m@ 7:9-25[0m: Operand has invalid type void.
+[36m@ 7:4-31[0m: Type mismatch: expected int but found bool.
+[36m@ 8:4-24[0m: Type mismatch: expected int but found void.
+[36m@ 8:4-30[0m: Expression Statement must be either Call or Assignment
+[36m@ 10:11-15[0m: Type mismatch: expected int but found bool.

@@ -1,3 +1,4 @@
+int main() {
     //Test unop
     var x = read_integer();
     print_integer(x);
@@ -15,3 +16,4 @@
     else print_integer(-x);
 
     return 0;
+}

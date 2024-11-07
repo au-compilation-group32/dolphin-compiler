@@ -1,3 +1,5 @@
+int main() {
     // nested function call
     print_integer(read_integer());
     return 0;
+}

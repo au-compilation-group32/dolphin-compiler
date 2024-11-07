@@ -1,3 +1,5 @@
+int main() {
     // None ExprStm
     ;
     return 0;
+}

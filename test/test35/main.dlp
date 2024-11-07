@@ -1,1 +1,3 @@
+int main() {
     / invalid line comment without newline
+}
