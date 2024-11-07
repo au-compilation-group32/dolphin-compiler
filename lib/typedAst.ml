@@ -43,8 +43,10 @@ type statement =
 | CompoundStm of {stms : statement list}
 | ReturnStm of {ret : expr}
 
-type param = Param of {paramname : ident; typ : typ}
+type param = Param of {typ : typ}
 
 type funtype = FunTyp of {ret : typ; params : param list}
 
-type program = statement list
+type function_declaration = FuncDecl of {fun_tp : funtype; body : statement list}
+
+type program = function_declaration list

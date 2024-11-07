@@ -6,6 +6,7 @@ type ident = Ident of {name : string; loc : Loc.location}
 type typ =
 | Int of {loc : Loc.location}
 | Bool of {loc : Loc.location}
+| Void of {loc : Loc.location}
 
 type binop =
 | Plus of {loc : Loc.location}
@@ -34,6 +35,7 @@ type expr =
 | Lval of lval
 | Assignment of {lvl : lval; rhs : expr; loc : Loc.location}
 | Call of {fname : ident; args : expr list; loc : Loc.location}
+| Comma of {left : expr; right : expr; loc : Loc.location}
 and lval =
 | Var of ident
 
@@ -56,4 +58,10 @@ type statement =
 | CompoundStm of {stms : statement list; loc : Loc.location}
 | ReturnStm of {ret : expr; loc : Loc.location}
 
-type program = statement list
+type param = Param of {paramname : ident; typ : typ; loc : Loc.location}
+
+type function_body = FuncBody of {stms : statement list; loc : Loc.location}
+
+type function_declaration = FuncDecl of {name : ident; ret_tp : typ; params : param list; body : function_body; loc : Loc.location}
+
+type program = function_declaration list

@@ -97,5 +97,11 @@ let rec statement_to_tree c =
   | ReturnStm {ret; _} -> PBox.hlist ~bars:false [make_keyword_line "ReturnValStm: "; expr_to_tree ret]
 and statement_seq_to_forest stms = List.map statement_to_tree stms
 
+let func_body_to_tree prog = 
+  PBox.tree (make_info_node_line "Body") (statement_seq_to_forest prog)
+
 let program_to_tree prog = 
-  PBox.tree (make_info_node_line "Program") (statement_seq_to_forest prog)
+  let main = List.hd prog in
+  let Ast.FuncDecl {name = _; ret_tp = _; params = _; body = main_body; loc = _} = main in
+  let Ast.FuncBody {stms = stms; loc = _} = main_body in
+  PBox.tree (make_info_node_line "Program") (statement_seq_to_forest stms)

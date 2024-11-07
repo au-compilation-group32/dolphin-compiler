@@ -93,5 +93,10 @@ let rec statement_to_tree c =
   | ReturnStm {ret; _} -> PBox.hlist ~bars:false [Pretty.make_keyword_line "ReturnValStm: "; expr_to_tree ret]
 and statement_seq_to_forest stms = List.map statement_to_tree stms
 
+let func_body_to_tree prg =
+  PBox.tree (Pretty.make_info_node_line "Body") (statement_seq_to_forest prg)
+
 let program_to_tree prg =
-  PBox.tree (Pretty.make_info_node_line "Program") (statement_seq_to_forest prg)
+  let main = List.hd prg in
+  let TypedAst.FuncDecl {fun_tp = _; body = main_body} = main in
+  PBox.tree (Pretty.make_info_node_line "Program") (statement_seq_to_forest main_body)

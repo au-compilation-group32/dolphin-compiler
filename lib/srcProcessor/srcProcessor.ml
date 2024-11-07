@@ -8,7 +8,7 @@ module Errors = Lib.Errors
 exception Unimplemented
 
 type lexResult =
-| LexSuccess of Ast.statement list
+| LexSuccess of Ast.program
 | LexFailure of Errors.error
 
 let get_loc_from_stm = function 

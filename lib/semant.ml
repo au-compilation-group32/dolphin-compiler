@@ -54,6 +54,7 @@ let rec infertype_expr env expr =
   | Ast.Lval lvl -> infertype_lval env lvl
   | Ast.Assignment {lvl; rhs; loc} -> infertype_assignment env lvl rhs loc
   | Ast.Call {fname; args; loc} -> infertype_call env fname args loc
+  | Ast.Comma {left; right; loc} -> raise Unimplemented
 and infertype_binop env left op right loc =
     match op with
     | Plus _ | Minus _ | Mul _ | Div _ | Rem _ | Lt _ | Le _ | Gt _ | Ge _ | Lor _ | Land _ -> 
@@ -124,7 +125,7 @@ and infertype_call env fname args loc =
           let _ = Env.insert_error env (Errors.FunctionParamCountMismatch{loc = loc; sym = fun_sym; expected = params_count; actual = args_count}) in
           (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = []; tp = TAst.ErrorType}, TAst.ErrorType, loc)
         else
-          let typecheck_param arg (TAst.Param {paramname = _; typ}) = typecheck_expr env arg typ in
+          let typecheck_param arg (TAst.Param {typ}) = typecheck_expr env arg typ in
           let typed_params = List.map2 typecheck_param args params in
           (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = typed_params; tp = ret}, ret, loc)
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
@@ -249,7 +250,7 @@ let rec typecheck_statement env stm =
       let _ =
         begin match e with
           | Ast.Assignment _ | Ast.Call _ -> ()
-          | Ast.Integer _ | Ast.Boolean _ | Ast.BinOp _ | Ast.UnOp _ | Ast.Lval _ -> 
+          | Ast.Integer _ | Ast.Boolean _ | Ast.BinOp _ | Ast.UnOp _ | Ast.Lval _ | Ast.Comma _ -> 
             Env.insert_error env (Errors.ShouldBeCallOrAssignment {loc = loc})
         end in
       (TAst.ExprStm {expr=Some b}, env)
@@ -271,10 +272,13 @@ and typecheck_statement_seq env stms =
 let initial_environment = Env.make_env Library.library_functions
 
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
-let typecheck_prog prg =
+let typecheck_prog prog =
+  let main = List.hd prog in
+  let Ast.FuncDecl {name = _; ret_tp = _; params = _; body = main_body; loc = _} = main in
+  let Ast.FuncBody {stms = stms; loc = _} = main_body in
   let env = initial_environment in
-  let tprog , _ = typecheck_statement_seq env prg in 
-  let _ = match List.rev tprog with 
+  let typed_stms , _ = typecheck_statement_seq env stms in 
+  let _ = match List.rev typed_stms with 
   | [] -> Env.insert_error env Errors.NoReturn
   | h::_ -> 
     begin match h with 
@@ -282,4 +286,5 @@ let typecheck_prog prg =
       | TAst.VarDeclStm _ | TAst.ExprStm _ | TAst.IfThenElseStm _ | TAst.WhileStm _ | TAst.ForStm _ | TAst.ContinueStm | TAst.BreakStm | TAst.CompoundStm _ ->
         Env.insert_error env Errors.NoReturn
     end in
+  let tprog = [TAst.FuncDecl {fun_tp = TAst.FunTyp{ret = TAst.Int; params = []}; body = typed_stms}] in
   tprog, Env.(env.errors)

@@ -304,12 +304,14 @@ and codegen_statement_seq env stms =
   List.fold_left merge ([], env) stms
 
 let codegen_prog prg =
+  let main = List.hd prg in
+  let TAst.FuncDecl {fun_tp = _; body = main_body} = main in
   let open Sym in
   let open Ll in
   let open CfgBuilder in
   let env = Env.make_empty_env in
   let builder = empty_cfg_builder in
-  let buildlets, _ = codegen_statement_seq env prg in
+  let buildlets, _ = codegen_statement_seq env main_body in
   let seq_buildlets = seq_buildlets buildlets in
   let cfg = get_cfg (seq_buildlets builder) in
   { tdecls    = []
