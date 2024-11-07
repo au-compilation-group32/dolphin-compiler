@@ -268,15 +268,12 @@ and typecheck_statement_seq env stms =
     let typed_t, env2 = typecheck_statement_seq env1 t in
     (typed_h :: typed_t, env2)
 
-(* the initial environment should include all the library functions, no local variables, and no errors. *)
-let initial_environment = Env.make_env Library.library_functions
-
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prog =
   let main = List.hd prog in
   let Ast.FuncDecl {name = _; ret_tp = _; params = _; body = main_body; loc = _} = main in
   let Ast.FuncBody {stms = stms; loc = _} = main_body in
-  let env = initial_environment in
+  let env = Env.make_env Library.library_functions in
   let typed_stms , _ = typecheck_statement_seq env stms in 
   let _ = match List.rev typed_stms with 
   | [] -> Env.insert_error env Errors.NoReturn
