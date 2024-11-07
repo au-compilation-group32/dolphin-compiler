@@ -27,7 +27,11 @@ bash run_all_test.sh
 
 This script will crash if one of the test failed.
 
-I also provide ``compile_prog`` in ``bin/compile.ml``
+I also provide ``compile_prog`` in ``bin/compile.ml``, you can run it with
+
+```
+dune exec bin/compile.exe test/test1/main.dlp
+```
 
 ### Test structure explanation
 
@@ -36,6 +40,10 @@ There is a function called run_testcase in lib/testUtils.ml that run the test ca
 Each test case is stored in a directory (i.e. test1). Inside this, testCase.ml stores the Ast, run semant on it. If semant success, it will compile the prog in to dolphin_main.ll, and link it using clang. The script will then run the a.out executable on the input file input.txt and produce output_actual.txt. Finally, the script compares output_actual.txt and output_expected.txt.
 
 If semant fail, output_actual.txt and output_expected.txt is the list of errors instead
+
+### Lexer and parser explanation
+
+The source code is provided in ``lib/srcProcessor``
 
 ## TODO list:
 

@@ -12,7 +12,8 @@ let sprint_err_list el = List.fold_left ( ^ ) "" (List.rev(List.map sprint_err e
 let handle_errors errors =
   let err_list_str = sprint_err_list errors in
   let _ = Printf.printf "\nERROR LIST: \n" in
-  Printf.printf "%s\n" err_list_str
+  let _ = Printf.printf "%s\n" err_list_str in
+  exit 1
 let compile_prog src_file = 
   let _ = Printf.printf "\n============================================================================\n" in
   let _ = Printf.printf "RUNNING TEST ON %s\n" src_file in
@@ -29,6 +30,7 @@ let compile_prog src_file =
     else 
       let llprog = CodeGen.codegen_prog tprog in
       let _ = Printf.printf "\nLLVM code: \n" in
-      Printf.printf "\n%s\n" (Ll.string_of_prog llprog)
+      let _ = Printf.printf "\n%s\n" (Ll.string_of_prog llprog) in
+      exit 0
 
-let _ = compile_prog "test/test1/main.dlp"
+let _ = compile_prog  Sys.argv.(1)
