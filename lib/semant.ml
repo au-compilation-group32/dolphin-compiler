@@ -185,12 +185,16 @@ let rec typecheck_statement env stm =
     end
   | Ast.IfThenElseStm {cond; thbr; elbro; loc = _} -> 
     let b = typecheck_expr env cond TAst.Bool in 
-    let thS, _ = typecheck_statement env thbr in
+    let thS, th_env = typecheck_statement env thbr in
+    let has_then_br_returned = Env.has_all_paths_returned th_env in
     begin match elbro with 
-    | Some e -> let elS, _ = typecheck_statement env e in
-      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = Some elS}, env)
+    | Some e -> let elS, el_env = typecheck_statement env e in
+      let has_else_br_returned = Env.has_all_paths_returned el_env in
+      let final_env = Env.{env with has_all_paths_returned = has_then_br_returned && has_else_br_returned} in
+      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = Some elS}, final_env)
     | None ->
-      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = None}, env)
+      let final_env = Env.{env with has_all_paths_returned = has_then_br_returned} in
+      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = None}, final_env)
     end
   | Ast.ExprStm {expr : Ast.expr option; loc : Loc.location} -> 
     begin match expr with 
@@ -255,8 +259,10 @@ let rec typecheck_statement env stm =
       else () in
     TAst.ContinueStm, env
   | Ast.CompoundStm {stms : Ast.statement list; loc = _} -> 
-    let tstmt_list, _ = typecheck_statement_seq env stms in
-    let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, env)
+    let tstmt_list, env2 = typecheck_statement_seq env stms in
+    let has_returned = Env.has_all_paths_returned env2 in
+    let final_env = Env.{env with has_all_paths_returned = has_returned} in
+    let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, final_env)
   | Ast.ReturnStm {ret; loc = _} -> 
     let b = typecheck_expr env ret TAst.Int in 
     let final_env = Env.{env with has_all_paths_returned = true} in
