@@ -10,6 +10,7 @@ exception UnexpectedErrorType
 let typecheck_typ = function
 | Ast.Int _ -> TAst.Int
 | Ast.Bool _ -> TAst.Bool
+| Ast.Void _ -> TAst.Void
 
 let typecheck_binop = function
 | Ast.Plus _ -> TAst.Plus
@@ -268,12 +269,29 @@ and typecheck_statement_seq env stms =
     let typed_t, env2 = typecheck_statement_seq env1 t in
     (typed_h :: typed_t, env2)
 
+let typecheck_func_decl env fd = raise Unimplemented
+
+let type_of_param p =
+  let Ast.Param{typ; _} = p in
+  TAst.Param {typ = typecheck_typ typ}
+
+let rec get_func_decl_list fd_list =
+  match fd_list with
+  | [] -> []
+  | h::t ->
+    let Ast.FuncDecl{name = Ident{name; loc = _}; ret_tp; params; body = _; loc = _} = h in
+    let sym = Symbol.symbol name in
+    let typed_ret_tp = typecheck_typ ret_tp in
+    let typed_params = List.map type_of_param params in
+    (sym, TAst.FunTyp {ret = typed_ret_tp; params = typed_params})::(get_func_decl_list t)
+
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prog =
   let main = List.hd prog in
   let Ast.FuncDecl {name = _; ret_tp = _; params = _; body = main_body; loc = _} = main in
   let Ast.FuncBody {stms = stms; loc = _} = main_body in
-  let env = Env.make_env Library.library_functions in
+  let fd_list = get_func_decl_list prog in
+  let env = Env.make_env (Library.library_functions @ fd_list) in
   let typed_stms , _ = typecheck_statement_seq env stms in 
   let _ = match List.rev typed_stms with 
   | [] -> Env.insert_error env Errors.NoReturn
