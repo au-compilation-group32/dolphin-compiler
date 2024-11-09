@@ -140,11 +140,3 @@ func_decl:
 
 prog:
   fl = list(func_decl) EOF {fl}
-  // sl = stm_list EOF {
-  //   let loc = {start_pos = $startpos; end_pos = $endpos} in
-  //   let name = Ast.Ident {name = "main"; loc = loc} in
-  //   let ret_tp = Ast.Int {loc = loc} in
-  //   let body = Ast.FuncBody {stms = sl; loc = loc} in
-  //   let main = Ast.FuncDecl {name = name; ret_tp = ret_tp; params = []; body = body; loc = loc} in
-  //   [main]
-  // }

@@ -126,7 +126,7 @@ and infertype_call env fname args loc =
           let _ = Env.insert_error env (Errors.FunctionParamCountMismatch{loc = loc; sym = fun_sym; expected = params_count; actual = args_count}) in
           (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = []; tp = TAst.ErrorType}, TAst.ErrorType, loc)
         else
-          let typecheck_param arg (TAst.Param {typ}) = typecheck_expr env arg typ in
+          let typecheck_param arg (TAst.Param {paramname = _; typ}) = typecheck_expr env arg typ in
           let typed_params = List.map2 typecheck_param args params in
           (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = typed_params; tp = ret}, ret, loc)
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
@@ -259,7 +259,8 @@ let rec typecheck_statement env stm =
     let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, env)
   | Ast.ReturnStm {ret; loc = _} -> 
     let b = typecheck_expr env ret TAst.Int in 
-    let x = TAst.ReturnStm {ret=b} in (x, env)
+    let final_env = Env.{env with has_all_paths_returned = true} in
+    let x = TAst.ReturnStm {ret=b} in (x, final_env)
 
 (* should use typecheck_statement to check the block of statements. *)
 and typecheck_statement_seq env stms =
@@ -270,14 +271,11 @@ and typecheck_statement_seq env stms =
     let typed_t, env2 = typecheck_statement_seq env1 t in
     (typed_h :: typed_t, env2)
 
-let typecheck_func_decl env fd =
-  let Ast.FuncDecl{name = Ident{name = func_name; loc = func_name_loc}; ret_tp; params; body = func_body; loc = func_body_loc} = fd in
-  let func_name_sym = Symbol.symbol func_name in
-  raise Unimplemented
+let infertype_param p =
+  let Ast.Param{paramname = Ast.Ident{name = name; loc = _}; typ; loc = _} = p in
+  TAst.Param {paramname = TAst.Ident{sym= (Symbol.symbol name)}; typ = typecheck_typ typ}
 
-let type_of_param p =
-  let Ast.Param{typ; _} = p in
-  TAst.Param {typ = typecheck_typ typ}
+let infertype_param_list params = List.map infertype_param params
 
 let rec add_decl_func_to_env env fd_list =
   let Env.{idents; _} = env in
@@ -287,7 +285,7 @@ let rec add_decl_func_to_env env fd_list =
     let Ast.FuncDecl{name = Ident{name; loc = fname_loc}; ret_tp; params; body = _; loc = _} = h in
     let sym = Symbol.symbol name in
     let typed_ret_tp = typecheck_typ ret_tp in
-    let typed_params = List.map type_of_param params in
+    let typed_params = List.map infertype_param params in
     let fun_typ = TAst.FunTyp{ret = typed_ret_tp; params = typed_params} in
     let _ = 
       if Symbol.Table.mem sym idents
@@ -296,8 +294,38 @@ let rec add_decl_func_to_env env fd_list =
     let new_env = Env.{env with idents = Env.add_fun_to_env idents (sym, fun_typ)} in
     add_decl_func_to_env new_env t
 
-(* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
+let typecheck_func_decl env fd =
+  let Ast.FuncDecl{name = Ident{name = func_name; loc = func_name_loc}; ret_tp; params; body = func_body; loc = func_decl_loc} = fd in
+  (* TODO: check for duplicated paramname *)
+  let func_name_sym = Symbol.symbol func_name in
+  let decl_fun_tp = TAst.FunTyp{ret = typecheck_typ ret_tp; params = infertype_param_list params} in
+  let Ast.FuncBody{stms; loc} = func_body in
+  let typed_stms, final_env = typecheck_statement_seq env stms in
+  let _ =
+    if not (Env.has_all_paths_returned final_env)
+    then Env.insert_error final_env (Errors.FunctionMissingReturn{loc = func_decl_loc; sym = func_name_sym})
+    else () in
+  TAst.FuncDecl{name = TAst.Ident {sym = func_name_sym}; fun_tp = decl_fun_tp; body = typed_stms}
+
+let check_main_func env =
+  match Env.lookup_var_fun env (Symbol.symbol "main") with
+  | None -> Env.insert_error env Errors.MainFunctionMissing
+  | Some fd -> match fd with
+    | Env.FunTyp TAst.FunTyp {ret; params} ->
+      if ret <> TAst.Int || List.length params <> 0
+      then Env.insert_error env Errors.FunctionMainInvalidSignature
+      else()
+    | Env.VarTyp _ -> raise UnreachableControlFlow
+
 let typecheck_prog prog =
+  let library_env = Env.make_env Library.library_functions in
+  let env = add_decl_func_to_env library_env prog in
+  let _ = check_main_func env in
+  let tprog = List.map (typecheck_func_decl env) prog in
+  tprog, Env.(env.errors)
+
+(* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
+(* let typecheck_prog prog =
   let main = List.hd prog in
   let Ast.FuncDecl {name = _; ret_tp = _; params = _; body = main_body; loc = _} = main in
   let Ast.FuncBody {stms = stms; loc = _} = main_body in
@@ -312,5 +340,5 @@ let typecheck_prog prog =
       | TAst.VarDeclStm _ | TAst.ExprStm _ | TAst.IfThenElseStm _ | TAst.WhileStm _ | TAst.ForStm _ | TAst.ContinueStm | TAst.BreakStm | TAst.CompoundStm _ ->
         Env.insert_error env Errors.NoReturn
     end in
-  let tprog = [TAst.FuncDecl {fun_tp = TAst.FunTyp{ret = TAst.Int; params = []}; body = typed_stms}] in
-  tprog, Env.(env.errors)
+  let tprog = [TAst.FuncDecl {name = TAst.ident_of_string "main"; fun_tp = TAst.FunTyp{ret = TAst.Int; params = []}; body = typed_stms}] in
+  tprog, Env.(env.errors) *)

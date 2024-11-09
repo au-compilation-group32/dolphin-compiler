@@ -1,1 +1,1 @@
-Program has no return.
+[36m@ 1:0-3:1[0m: Function main has no return or not all paths have return.

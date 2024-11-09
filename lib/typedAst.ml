@@ -2,6 +2,7 @@
 module Sym = Symbol
 
 type ident = Ident of {sym : Sym.symbol}
+let ident_of_string name = Ident {sym = Sym.symbol name}
 
 type typ = | Void | Int | Bool | ErrorType
 
@@ -43,10 +44,10 @@ type statement =
 | CompoundStm of {stms : statement list}
 | ReturnStm of {ret : expr}
 
-type param = Param of {typ : typ}
+type param = Param of {paramname: ident; typ : typ}
 
 type funtype = FunTyp of {ret : typ; params : param list}
 
-type function_declaration = FuncDecl of {fun_tp : funtype; body : statement list}
+type function_declaration = FuncDecl of {name : ident; fun_tp : funtype; body : statement list}
 
 type program = function_declaration list

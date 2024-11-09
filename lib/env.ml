@@ -44,3 +44,5 @@ let lookup_var_fun env sym =
 let enter_loop env = {env with is_inside_loop = true}
 
 let is_inside_loop {is_inside_loop; _} = is_inside_loop
+
+let has_all_paths_returned {has_all_paths_returned; _} = has_all_paths_returned

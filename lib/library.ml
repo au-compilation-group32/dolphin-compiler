@@ -1,10 +1,8 @@
 module TAst = TypedAst
 module Sym = Symbol
 
-let make_ident name = TAst.Ident {sym = Sym.symbol name}
-
 let library_functions =
   [
     (Symbol.symbol "read_integer", TAst.FunTyp {ret = TAst.Int; params = []});
-    (Symbol.symbol "print_integer", TAst.FunTyp {ret = TAst.Void; params = [TAst.Param {typ = TAst.Int}]})
+    (Symbol.symbol "print_integer", TAst.FunTyp {ret = TAst.Void; params = [TAst.Param {paramname = TAst.ident_of_string "i"; typ = TAst.Int}]})
   ]
