@@ -93,10 +93,25 @@ let rec statement_to_tree c =
   | ReturnStm {ret; _} -> PBox.hlist ~bars:false [Pretty.make_keyword_line "ReturnValStm: "; expr_to_tree ret]
 and statement_seq_to_forest stms = List.map statement_to_tree stms
 
-let func_body_to_tree prg =
-  PBox.tree (Pretty.make_info_node_line "Body") (statement_seq_to_forest prg)
+let func_body_to_tree stms = 
+  PBox.tree (Pretty.make_info_node_line "Body") (statement_seq_to_forest stms)
 
-let program_to_tree prg =
-  let main = List.hd prg in
-  let TypedAst.FuncDecl {fun_tp = _; body = main_body} = main in
-  PBox.tree (Pretty.make_info_node_line "Program") (statement_seq_to_forest main_body)
+let func_decl_param_to_tree (Param{paramname; typ; _}) =
+  PBox.tree (Pretty.make_keyword_line "Param") 
+    [PBox.hlist ~bars:false [Pretty.make_info_node_line "Name: "; ident_to_tree paramname]; 
+    PBox.hlist ~bars:false [Pretty.make_info_node_line "Type: "; typ_to_tree typ]]
+
+let func_type_to_tree (FunTyp{ret; params}) =
+  PBox.tree (Pretty.make_keyword_line "FuncType") 
+    [PBox.hlist ~bars:false [Pretty.make_info_node_line "Return: "; typ_to_tree ret]; 
+    PBox.hlist ~bars:false [PBox.tree (Pretty.make_info_node_line "Params: ") (List.map func_decl_param_to_tree params)]]
+
+let func_decl_to_tree fd = 
+  let TypedAst.FuncDecl {name; fun_tp; body} = fd in
+  PBox.tree (Pretty.make_keyword_line "FuncDecl") 
+    [PBox.hlist ~bars:false [Pretty.make_info_node_line "Name: "; ident_to_tree name]; 
+    PBox.hlist ~bars:false [Pretty.make_info_node_line "Type: "; func_type_to_tree fun_tp];
+    PBox.hlist ~bars:false [PBox.tree (Pretty.make_info_node_line "Body: ") (statement_seq_to_forest body)]]
+
+let program_to_tree prog = 
+  PBox.tree (Pretty.make_info_node_line "Program") (List.map func_decl_to_tree prog)

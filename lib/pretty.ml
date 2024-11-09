@@ -22,6 +22,7 @@ let typ_to_tree tp =
   match tp with
   | Bool _ -> make_typ_line "Bool"
   | Int _ -> make_typ_line "Int"
+  | Void _ -> make_typ_line "Void"
 
 let binop_to_tree op =
     match op with
@@ -56,6 +57,7 @@ let unop_to_tree op =
       PBox.tree (make_info_node_line "Call")
         [PBox.hlist ~bars:false [make_info_node_line "FunName: "; ident_to_tree fname];
          PBox.tree (make_info_node_line "Args") (List.map (fun e -> expr_to_tree e) args)]
+    | Comma {left; right; _} -> PBox.tree (make_info_node_line "Comma") [expr_to_tree left; expr_to_tree right]
   and lval_to_tree l =
     match l with
     | Var ident -> PBox.hlist ~bars:false [make_info_node_line "Var("; ident_to_tree ident; make_info_node_line ")"]
@@ -97,11 +99,22 @@ let rec statement_to_tree c =
   | ReturnStm {ret; _} -> PBox.hlist ~bars:false [make_keyword_line "ReturnValStm: "; expr_to_tree ret]
 and statement_seq_to_forest stms = List.map statement_to_tree stms
 
-let func_body_to_tree prog = 
-  PBox.tree (make_info_node_line "Body") (statement_seq_to_forest prog)
+let func_body_to_tree stms = 
+  PBox.tree (make_info_node_line "Body") (statement_seq_to_forest stms)
+
+let func_decl_param_to_tree (Param{paramname; typ; _}) =
+  PBox.tree (make_keyword_line "Param") 
+    [PBox.hlist ~bars:false [make_info_node_line "Name: "; ident_to_tree paramname]; 
+    PBox.hlist ~bars:false [make_info_node_line "Type: "; typ_to_tree typ]]
+
+let func_decl_to_tree fd = 
+  let Ast.FuncDecl {name; ret_tp; params; body; loc = _} = fd in
+  let Ast.FuncBody {stms; loc = _} = body in
+  PBox.tree (make_keyword_line "FuncDecl") 
+    [PBox.hlist ~bars:false [make_info_node_line "Name: "; ident_to_tree name]; 
+    PBox.hlist ~bars:false [make_info_node_line "ReturnType: "; typ_to_tree ret_tp];
+    PBox.hlist ~bars:false [PBox.tree (make_info_node_line "Params: ") (List.map func_decl_param_to_tree params)];
+    PBox.hlist ~bars:false [PBox.tree (make_info_node_line "Body: ") (statement_seq_to_forest stms)]]
 
 let program_to_tree prog = 
-  let main = List.hd prog in
-  let Ast.FuncDecl {name = _; ret_tp = _; params = _; body = main_body; loc = _} = main in
-  let Ast.FuncBody {stms = stms; loc = _} = main_body in
-  PBox.tree (make_info_node_line "Program") (statement_seq_to_forest stms)
+  PBox.tree (make_info_node_line "Program") (List.map func_decl_to_tree prog)
