@@ -176,22 +176,35 @@ let rec typecheck_var_delcs env vars =
 (* should check the validity of a statement and produce the corresponding typed statement. Should use typecheck_expr and/or infertype_expr as necessary. *)
 let rec typecheck_statement env stm =
   match stm with
-  | Ast.ReturnStm {ret; loc = _} -> 
-    let b = typecheck_expr env ret TAst.Int in 
-    let x = TAst.ReturnStm {ret=b} in (x, env)
-  | Ast.BreakStm {loc} -> 
-    let _ = Printf.printf "%b" (Env.is_inside_loop env) in
-    let _ = 
-      if not (Env.is_inside_loop env)
-      then Env.insert_error env (Errors.BreakOrContinueOutsideLoop {loc = loc})
-      else () in
-    TAst.BreakStm, env
-  | Ast.ContinueStm {loc} ->
-    let _ = 
-      if not (Env.is_inside_loop env)
-      then Env.insert_error env (Errors.BreakOrContinueOutsideLoop {loc = loc})
-      else () in
-    TAst.ContinueStm, env
+  | Ast.VarDeclStm declaration_block -> 
+    begin match declaration_block with
+    | DeclBlock {declarations; loc = _} -> 
+      let dlst, e = typecheck_var_delcs env declarations in 
+      let decl = TAst.DeclBlock dlst in
+      TAst.VarDeclStm decl, e
+    end
+  | Ast.IfThenElseStm {cond; thbr; elbro; loc = _} -> 
+    let b = typecheck_expr env cond TAst.Bool in 
+    let thS, _ = typecheck_statement env thbr in
+    begin match elbro with 
+    | Some e -> let elS, _ = typecheck_statement env e in
+      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = Some elS}, env)
+    | None ->
+      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = None}, env)
+    end
+  | Ast.ExprStm {expr : Ast.expr option; loc : Loc.location} -> 
+    begin match expr with 
+    | Some e ->
+      let (b, _, _) = infertype_expr env e in
+      let _ =
+        begin match e with
+          | Ast.Assignment _ | Ast.Call _ -> ()
+          | Ast.Integer _ | Ast.Boolean _ | Ast.BinOp _ | Ast.UnOp _ | Ast.Lval _ | Ast.Comma _ -> 
+            Env.insert_error env (Errors.ShouldBeCallOrAssignment {loc = loc})
+        end in
+      (TAst.ExprStm {expr=Some b}, env)
+    | None -> (TAst.ExprStm {expr=None}, env)
+    end
   | Ast.WhileStm {cond; body; loc = _} -> 
     let c = typecheck_expr env cond TAst.Bool in 
     let inside_loop_env = Env.enter_loop env in
@@ -228,38 +241,26 @@ let rec typecheck_statement env stm =
     let inside_loop_env = Env.enter_loop newEnv in
     let stat, _ = typecheck_statement inside_loop_env body in
     TAst.ForStm{init = ini; cond =con; update =upd; body = stat}, env
-  | Ast.VarDeclStm declaration_block -> 
-    begin match declaration_block with
-    | DeclBlock {declarations; loc = _} -> 
-      let dlst, e = typecheck_var_delcs env declarations in 
-      let decl = TAst.DeclBlock dlst in
-      TAst.VarDeclStm decl, e
-    end
-  | Ast.IfThenElseStm {cond; thbr; elbro; loc = _} -> 
-    let b = typecheck_expr env cond TAst.Bool in 
-    let thS, _ = typecheck_statement env thbr in
-    begin match elbro with 
-    | Some e -> let elS, _ = typecheck_statement env e in
-      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = Some elS}, env)
-    | None ->
-      (TAst.IfThenElseStm {cond = b; thbr = thS; elbro = None}, env)
-    end
-  | Ast.ExprStm {expr : Ast.expr option; loc : Loc.location} -> 
-    begin match expr with 
-    | Some e ->
-      let (b, _, _) = infertype_expr env e in
-      let _ =
-        begin match e with
-          | Ast.Assignment _ | Ast.Call _ -> ()
-          | Ast.Integer _ | Ast.Boolean _ | Ast.BinOp _ | Ast.UnOp _ | Ast.Lval _ | Ast.Comma _ -> 
-            Env.insert_error env (Errors.ShouldBeCallOrAssignment {loc = loc})
-        end in
-      (TAst.ExprStm {expr=Some b}, env)
-    | None -> (TAst.ExprStm {expr=None}, env)
-    end
+  | Ast.BreakStm {loc} -> 
+    let _ = Printf.printf "%b" (Env.is_inside_loop env) in
+    let _ = 
+      if not (Env.is_inside_loop env)
+      then Env.insert_error env (Errors.BreakOrContinueOutsideLoop {loc = loc})
+      else () in
+    TAst.BreakStm, env
+  | Ast.ContinueStm {loc} ->
+    let _ = 
+      if not (Env.is_inside_loop env)
+      then Env.insert_error env (Errors.BreakOrContinueOutsideLoop {loc = loc})
+      else () in
+    TAst.ContinueStm, env
   | Ast.CompoundStm {stms : Ast.statement list; loc = _} -> 
     let tstmt_list, _ = typecheck_statement_seq env stms in
     let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, env)
+  | Ast.ReturnStm {ret; loc = _} -> 
+    let b = typecheck_expr env ret TAst.Int in 
+    let x = TAst.ReturnStm {ret=b} in (x, env)
+
 (* should use typecheck_statement to check the block of statements. *)
 and typecheck_statement_seq env stms =
   match stms with
