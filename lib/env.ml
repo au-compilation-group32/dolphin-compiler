@@ -3,6 +3,7 @@
 exception Unimplemented (* your code should eventually compile without this exception *)
 
 module Sym = Symbol
+module Ast = Ast
 module TAst = TypedAst
 
 type identType = 
@@ -11,17 +12,20 @@ type identType =
 
 type environment = {idents : identType Sym.Table.t;
                     errors : Errors.error list ref;
-                    is_inside_loop: bool}
+                    is_inside_loop: bool;
+                    has_all_paths_returned: bool}
+
+let add_fun_to_env env (fsym, ftp) = Sym.Table.add fsym (FunTyp ftp) env
 
 (* create an initial environment with the given functions defined *)
-let make_env function_types =
+let make_env library_functions =
   let emp = Sym.Table.empty in
   let env =
     List.fold_left 
-      (fun env (fsym, ftp) -> Sym.Table.add fsym (FunTyp ftp) env)
+      add_fun_to_env
       emp 
-      function_types
-  in {idents = env; errors = ref []; is_inside_loop = false}
+      library_functions
+  in {idents = env; errors = ref []; is_inside_loop = false; has_all_paths_returned = false}
 
 (* insert a local declaration into the environment *)
 let insert_local_decl env sym typ =

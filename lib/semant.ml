@@ -270,29 +270,39 @@ and typecheck_statement_seq env stms =
     let typed_t, env2 = typecheck_statement_seq env1 t in
     (typed_h :: typed_t, env2)
 
-let typecheck_func_decl env fd = raise Unimplemented
+let typecheck_func_decl env fd =
+  let Ast.FuncDecl{name = Ident{name = func_name; loc = func_name_loc}; ret_tp; params; body = func_body; loc = func_body_loc} = fd in
+  let func_name_sym = Symbol.symbol func_name in
+  raise Unimplemented
 
 let type_of_param p =
   let Ast.Param{typ; _} = p in
   TAst.Param {typ = typecheck_typ typ}
 
-let rec get_func_decl_list fd_list =
+let rec add_decl_func_to_env env fd_list =
+  let Env.{idents; _} = env in
   match fd_list with
-  | [] -> []
+  | [] -> env
   | h::t ->
-    let Ast.FuncDecl{name = Ident{name; loc = _}; ret_tp; params; body = _; loc = _} = h in
+    let Ast.FuncDecl{name = Ident{name; loc = fname_loc}; ret_tp; params; body = _; loc = _} = h in
     let sym = Symbol.symbol name in
     let typed_ret_tp = typecheck_typ ret_tp in
     let typed_params = List.map type_of_param params in
-    (sym, TAst.FunTyp {ret = typed_ret_tp; params = typed_params})::(get_func_decl_list t)
+    let fun_typ = TAst.FunTyp{ret = typed_ret_tp; params = typed_params} in
+    let _ = 
+      if Symbol.Table.mem sym idents
+      then Env.insert_error env (Errors.FunctionDuplicateDeclaration{loc = fname_loc; sym = sym})
+      else () in
+    let new_env = Env.{env with idents = Env.add_fun_to_env idents (sym, fun_typ)} in
+    add_decl_func_to_env new_env t
 
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prog =
   let main = List.hd prog in
   let Ast.FuncDecl {name = _; ret_tp = _; params = _; body = main_body; loc = _} = main in
   let Ast.FuncBody {stms = stms; loc = _} = main_body in
-  let fd_list = get_func_decl_list prog in
-  let env = Env.make_env (Library.library_functions @ fd_list) in
+  let library_env = Env.make_env Library.library_functions in
+  let env = add_decl_func_to_env library_env prog in
   let typed_stms , _ = typecheck_statement_seq env stms in 
   let _ = match List.rev typed_stms with 
   | [] -> Env.insert_error env Errors.NoReturn

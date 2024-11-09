@@ -22,6 +22,7 @@ type error =
 | LexerIntegerOutOfRange of {loc: Location.location; str: string}
 | LexerUnmatchedBlockComment of {loc: Location.location; str: string}
 | ParserSyntaxError of {loc: Location.location; c: char}
+| FunctionDuplicateDeclaration of {loc: Location.location; sym: Sym.symbol}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -41,3 +42,4 @@ let error_to_string err =
   | LexerIntegerOutOfRange {loc; str} -> Printf.sprintf "%s: Integer %s is out of int64 range." (loc_to_string loc) str
   | LexerUnmatchedBlockComment {loc; str} -> Printf.sprintf "%s: Unmatched block comment near %s." (loc_to_string loc) str
   | ParserSyntaxError {loc; c} -> Printf.sprintf "%s: Syntax error near \'%c\'." (loc_to_string loc) c
+  | FunctionDuplicateDeclaration {loc; sym} -> Printf.sprintf "%s: Function %s has already been declared. Duplicated function names are not allowed." (loc_to_string loc) (Sym.name sym)
