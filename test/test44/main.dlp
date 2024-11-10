@@ -1,0 +1,23 @@
+// Positive function test
+
+bool is_prime(x:int) {
+    if (x < 2) return false;
+    for (var i = 2; i < x; i = i+1) {
+        if (x%i == 0) return false;
+    }
+    return true;
+}
+
+int is_prime_int(x:int) {
+    if (is_prime(x)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int main() {
+    print_integer(is_prime_int(12));
+    print_integer(is_prime_int(17));
+    return 0;
+}

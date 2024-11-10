@@ -13,6 +13,7 @@ type identType =
 type environment = {idents : identType Sym.Table.t;
                     errors : Errors.error list ref;
                     is_inside_loop: bool;
+                    expected_ret_tp : TAst.typ;
                     has_all_paths_returned: bool}
 
 let add_fun_to_env env (fsym, ftp) = Sym.Table.add fsym (FunTyp ftp) env
@@ -25,7 +26,7 @@ let make_env library_functions =
       add_fun_to_env
       emp 
       library_functions
-  in {idents = env; errors = ref []; is_inside_loop = false; has_all_paths_returned = false}
+  in {idents = env; errors = ref []; is_inside_loop = false; expected_ret_tp = TAst.Void; has_all_paths_returned = false}
 
 (* insert a local declaration into the environment *)
 let insert_local_decl env sym typ =
@@ -44,5 +45,7 @@ let lookup_var_fun env sym =
 let enter_loop env = {env with is_inside_loop = true}
 
 let is_inside_loop {is_inside_loop; _} = is_inside_loop
+
+let expected_ret_tp {expected_ret_tp; _} = expected_ret_tp
 
 let has_all_paths_returned {has_all_paths_returned; _} = has_all_paths_returned

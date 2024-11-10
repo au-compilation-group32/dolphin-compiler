@@ -263,8 +263,10 @@ let rec typecheck_statement env stm =
     let has_returned = Env.has_all_paths_returned env2 in
     let final_env = Env.{env with has_all_paths_returned = has_returned} in
     let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, final_env)
-  | Ast.ReturnStm {ret; loc = _} -> 
-    let b = typecheck_expr env ret TAst.Int in 
+  | Ast.ReturnStm {ret; loc = _} ->
+    (* TODO: support return void *)
+    let expected_ret_tp = Env.expected_ret_tp env in
+    let b = typecheck_expr env ret expected_ret_tp in 
     let final_env = Env.{env with has_all_paths_returned = true} in
     let x = TAst.ReturnStm {ret=b} in (x, final_env)
 
@@ -278,6 +280,7 @@ and typecheck_statement_seq env stms =
     (typed_h :: typed_t, env2)
 
 let infertype_param p =
+  (*TODO: check for void type*)
   let Ast.Param{paramname = Ast.Ident{name = name; loc = _}; typ; loc = _} = p in
   TAst.Param {paramname = TAst.Ident{sym= (Symbol.symbol name)}; typ = typecheck_typ typ}
 
@@ -300,13 +303,20 @@ let rec add_decl_func_to_env env fd_list =
     let new_env = Env.{env with idents = Env.add_fun_to_env idents (sym, fun_typ)} in
     add_decl_func_to_env new_env t
 
+let insert_param_to_env env param =
+  let TAst.Param {paramname = TAst.Ident {sym}; typ} = param in
+  Env.insert_local_decl env sym typ
+
 let typecheck_func_decl env fd =
   let Ast.FuncDecl{name = Ident{name = func_name; loc = func_name_loc}; ret_tp; params; body = func_body; loc = func_decl_loc} = fd in
   (* TODO: check for duplicated paramname *)
   let func_name_sym = Symbol.symbol func_name in
-  let decl_fun_tp = TAst.FunTyp{ret = typecheck_typ ret_tp; params = infertype_param_list params} in
+  let typed_params = infertype_param_list params in
+  let decl_fun_tp = TAst.FunTyp{ret = typecheck_typ ret_tp; params = typed_params} in
   let Ast.FuncBody{stms; loc} = func_body in
-  let typed_stms, final_env = typecheck_statement_seq env stms in
+  let env2 = Env.{env with expected_ret_tp = typecheck_typ ret_tp} in
+  let env3 = List.fold_left insert_param_to_env env2 typed_params in
+  let typed_stms, final_env = typecheck_statement_seq env3 stms in
   let _ =
     if not (Env.has_all_paths_returned final_env)
     then Env.insert_error final_env (Errors.FunctionMissingReturn{loc = func_decl_loc; sym = func_name_sym})
