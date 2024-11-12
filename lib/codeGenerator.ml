@@ -335,25 +335,18 @@ let codegen_func_decl env fd =
   let ll_ftyp = (ll_param_tys, ll_type_of ret) in
   let builder = CfgBuilder.empty_cfg_builder in
   let params_buildlets, params_uids, env_with_arg = codegen_param_list env params in
-  (* let params_buildlets = [] in *)
   let body_buildlets, _ = codegen_statement_seq env_with_arg body in
-  (* let body_buildlets= [] in *)
-  let seq_buildlets = CfgBuilder.seq_buildlets (params_buildlets @ body_buildlets) in
+  let final_term = CfgBuilder.term_block (Ll.Unreachable) in
+  let seq_buildlets = CfgBuilder.seq_buildlets (params_buildlets @ body_buildlets @ [final_term]) in
   let cfg = CfgBuilder.get_cfg (seq_buildlets builder) in
   let ll_fdecl = Ll.{fty = ll_ftyp; param = params_uids; cfg = cfg} in
   (fname_sym, ll_fdecl)
 
 let codegen_prog prg =
-  (* let main = List.hd prg in *)
-  (* let TAst.FuncDecl {fun_tp = _; body = main_body; _} = main in *)
   let open Sym in
   let open Ll in
   let open CfgBuilder in
   let env = Env.make_empty_env in
-  (* let builder = empty_cfg_builder in
-  let buildlets, _ = codegen_statement_seq env main_body in
-  let seq_buildlets = seq_buildlets buildlets in
-  let cfg = get_cfg (seq_buildlets builder) in *)
   let fdecls = List.map (codegen_func_decl env) prg in
   { tdecls    = []
   ; extgdecls = []
