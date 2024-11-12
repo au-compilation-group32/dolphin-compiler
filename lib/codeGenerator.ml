@@ -160,16 +160,16 @@ let codegen_var_delc env var = match var with
     let _ = assert (asgn_tp = ll_type) in
     ([i1] @ asgn_buildlets, new_env)
   
-    let rec codegen_var_delcs env vars = 
-    match vars with
-    | [] -> ([],env)
-    | [h] -> 
-      let d, e = codegen_var_delc env h in
-      (d, e)
-    | h :: t -> 
-      let d, e1 = codegen_var_delc env h in
-      let ds, e2 = codegen_var_delcs e1 t in
-      (d @ ds, e2)
+let rec codegen_var_delcs env vars = 
+  match vars with
+  | [] -> ([],env)
+  | [h] -> 
+    let d, e = codegen_var_delc env h in
+    (d, e)
+  | h :: t -> 
+    let d, e1 = codegen_var_delc env h in
+    let ds, e2 = codegen_var_delcs e1 t in
+    (d @ ds, e2)
 
 let rec codegen_statement env stm =
   match stm with
@@ -294,7 +294,9 @@ let rec codegen_statement env stm =
   | TAst.ReturnStm {ret} ->
     let buildlets, ret_tp, ret_operand = codegen_expr env ret in
     let tr = CfgBuilder.term_block (Ll.Ret (ret_tp, Some ret_operand)) in
-    (buildlets @ [tr], env)
+    let new_env, new_block_sym = Env.insert_label env in
+    let start_new_blk = CfgBuilder.start_block(new_block_sym) in
+    (buildlets @ [tr; start_new_blk], new_env)
 and codegen_statement_seq env stms =
   let merge ret stms = 
     let (current_buildlets, current_env) = ret in
@@ -303,23 +305,60 @@ and codegen_statement_seq env stms =
   in
   List.fold_left merge ([], env) stms
 
+let codegen_param env p =
+  let TAst.Param {paramname; typ} = p in
+  let TAst.Ident {sym} = paramname in
+  let env, arg_alias_sym = Env.insert_arg env sym in
+  let env, local_copy_arg_alias_sym = Env.insert_reg env sym in
+  let ll_type = ll_type_of typ in
+  let arg_op = Ll.Id arg_alias_sym in
+  let local_copy_op = Ll.Id local_copy_arg_alias_sym in
+  let alloca_insn = CfgBuilder.add_alloca (local_copy_arg_alias_sym, ll_type) in
+  let copy_insn = CfgBuilder.add_insn (None, Ll.Store(ll_type, arg_op, local_copy_op)) in
+  ([alloca_insn; copy_insn], arg_alias_sym, env)
+
+let codegen_param_list env params =
+  let merge ret param =
+    let (current_buildlets, current_arg_uid_list, current_env) = ret in
+    let buildlets, arg_uid, new_env = codegen_param current_env param in
+    (current_buildlets @ buildlets, current_arg_uid_list @ [arg_uid], new_env)
+  in
+  List.fold_left merge ([], [], env) params
+
+let ll_type_of_param (TAst.Param {typ; _}) = ll_type_of typ
+
+let codegen_func_decl env fd = 
+  let TAst.FuncDecl {name; fun_tp; body} = fd in
+  let TAst.FunTyp {ret; params} = fun_tp in
+  let TAst.Ident {sym = fname_sym} = name in
+  let ll_param_tys = List.map ll_type_of_param params in
+  let ll_ftyp = (ll_param_tys, ll_type_of ret) in
+  let builder = CfgBuilder.empty_cfg_builder in
+  let params_buildlets, params_uids, env_with_arg = codegen_param_list env params in
+  (* let params_buildlets = [] in *)
+  let body_buildlets, _ = codegen_statement_seq env_with_arg body in
+  (* let body_buildlets= [] in *)
+  let seq_buildlets = CfgBuilder.seq_buildlets (params_buildlets @ body_buildlets) in
+  let cfg = CfgBuilder.get_cfg (seq_buildlets builder) in
+  let ll_fdecl = Ll.{fty = ll_ftyp; param = params_uids; cfg = cfg} in
+  (fname_sym, ll_fdecl)
+
 let codegen_prog prg =
-  let main = List.hd prg in
-  let TAst.FuncDecl {fun_tp = _; body = main_body} = main in
+  (* let main = List.hd prg in *)
+  (* let TAst.FuncDecl {fun_tp = _; body = main_body; _} = main in *)
   let open Sym in
   let open Ll in
   let open CfgBuilder in
   let env = Env.make_empty_env in
-  let builder = empty_cfg_builder in
+  (* let builder = empty_cfg_builder in
   let buildlets, _ = codegen_statement_seq env main_body in
   let seq_buildlets = seq_buildlets buildlets in
-  let cfg = get_cfg (seq_buildlets builder) in
+  let cfg = get_cfg (seq_buildlets builder) in *)
+  let fdecls = List.map (codegen_func_decl env) prg in
   { tdecls    = []
   ; extgdecls = []
   ; gdecls    = []
   ; extfuns   = [ (symbol "print_integer",  ([I64], Void))
                 ; (symbol "read_integer", ([], I64))]
-  ; fdecls = [ (Sym.symbol "dolphin_main", 
-                { fty = ([],  I64); param = []; cfg}  
-               )] 
+  ; fdecls = fdecls
   }

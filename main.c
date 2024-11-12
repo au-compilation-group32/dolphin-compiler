@@ -3,13 +3,6 @@
 #include <stdio.h>
 #include <inttypes.h>      /* present in the start of your C file */
 
-extern int64_t dolphin_main();
-
-int main() {
-    int64_t result = dolphin_main();
-    printf("return %ld\n", result);
-    return result;
-}
 
 int64_t read_integer () {
     int64_t value;
@@ -21,3 +14,5 @@ int64_t read_integer () {
 void print_integer (int64_t x) {
     printf ("%ld\n", x);
 }
+
+extern int64_t main();

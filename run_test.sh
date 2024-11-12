@@ -20,6 +20,7 @@ else
     echo "Semantics analysis success, compile and run"
     clang main.c $test_name/dolphin_main.ll
     ./a.out < $test_name/input.txt > $test_name/output_actual.txt
+    echo "return $?" >> $test_name/output_actual.txt
     diff $test_name/output_actual.txt $test_name/output_expected.txt
     if [ $? -ne 0 ]; then
         echo "diff reports that expected and actual output are different"
