@@ -324,11 +324,22 @@ let insert_param_to_env env param =
   let TAst.Param {paramname = TAst.Ident {sym}; typ} = param in
   Env.insert_local_decl env sym typ
 
+let get_param_sym_list typed_params =
+  let get_param_sym (TAst.Param {paramname = TAst.Ident {sym}; _}) = sym in
+  List.map get_param_sym typed_params
+
 let typecheck_func_decl env fd =
   let Ast.FuncDecl{name = Ident{name = func_name; loc = func_name_loc}; ret_tp; params; body = func_body; loc = func_decl_loc} = fd in
   (* TODO: check for duplicated paramname *)
   let func_name_sym = Symbol.symbol func_name in
   let typed_params = infertype_param_list ~reportError:false env params in
+  let param_syms = get_param_sym_list typed_params in
+  let duplicated_syms = Symbol.find_duplicates param_syms in
+  let _ =
+    if List.length duplicated_syms > 0
+    then Env.insert_error env (Errors.FunctionDuplicatedParamnames {loc = func_decl_loc; fname_sym = func_name_sym; syms = duplicated_syms})
+    else ()
+  in
   let decl_fun_tp = TAst.FunTyp{ret = typecheck_typ ret_tp; params = typed_params} in
   let Ast.FuncBody{stms; loc} = func_body in
   let env2 = Env.{env with expected_ret_tp = typecheck_typ ret_tp} in

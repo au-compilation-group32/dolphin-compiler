@@ -1,0 +1,4 @@
+[36m@ 3:0-5:1[0m: Function foo has duplicated param names: x.
+[36m@ 7:0-9:1[0m: Function bar has duplicated param names: y.
+[36m@ 8:18-19[0m: Type mismatch: expected int but found bool.
+[36m@ 11:0-13:1[0m: Function foobar has duplicated param names: x, x, y.

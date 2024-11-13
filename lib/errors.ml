@@ -5,6 +5,10 @@ module TPretty = TypedPretty
 module Location = Location
 
 let loc_to_string loc = PrintBox_text.to_string (Location.location_to_tree ~includefile:false loc)
+let rec sym_list_to_string syms = match syms with
+| [] -> ""
+| [e] -> Symbol.name e
+| h::t -> (Symbol.name h) ^ ", " ^ sym_list_to_string t
 
 type error =
 | TypeMismatch of {loc: Location.location; expected : TAst.typ; actual : TAst.typ}
@@ -28,6 +32,7 @@ type error =
 | FunctionVoidReturnExpr of {loc: Location.location}
 | FunctionUnexpectedReturnVoid of {loc: Location.location; typ: TAst.typ}
 | FunctionParamInvalidTypeVoid of {loc: Location.location; sym: Symbol.symbol}
+| FunctionDuplicatedParamnames of {loc: Location.location; fname_sym: Symbol.symbol; syms: Symbol.symbol list}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -53,3 +58,4 @@ let error_to_string err =
   | FunctionVoidReturnExpr {loc} -> Printf.sprintf "%s: Return statement of void function expect no expression." (loc_to_string loc)
   | FunctionUnexpectedReturnVoid {loc; typ} -> Printf.sprintf "%s: Return statement have a void expression, expect expression of type %s." (loc_to_string loc) (TPretty.typ_to_string typ)
   | FunctionParamInvalidTypeVoid {loc; sym} -> Printf.sprintf "%s: Param %s has type void. This is illegal." (loc_to_string loc) (Sym.name sym)
+  | FunctionDuplicatedParamnames {loc; fname_sym; syms} -> Printf.sprintf "%s: Function %s has duplicated param names: %s." (loc_to_string loc) (Sym.name fname_sym) (sym_list_to_string (List.rev syms))

@@ -1,0 +1,19 @@
+// Test negative duplicated paramnames
+
+int foo(x: int, x: int) {
+    return x;
+}
+
+void bar(y: int, y: bool) {
+    print_integer(y);
+}
+
+int foobar(x: int, x: bool, x: int, y: int, y: int) {
+    return x+y;
+}
+int main () {
+    foo(0, 1);
+    bar(0, true);
+    foobar(0, true, 1, 0, 1);
+    return 0;
+}
