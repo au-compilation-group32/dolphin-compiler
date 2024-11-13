@@ -358,7 +358,6 @@ let codegen_func_decl env fd =
 let codegen_prog prg =
   let open Sym in
   let open Ll in
-  let open CfgBuilder in
   let env = Env.make_empty_env in
   let fdecls = List.map (codegen_func_decl env) prg in
   { tdecls    = []

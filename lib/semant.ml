@@ -333,7 +333,7 @@ let get_param_sym_list typed_params =
   List.map get_param_sym typed_params
 
 let typecheck_func_decl env fd =
-  let Ast.FuncDecl{name = Ident{name = func_name; loc = func_name_loc}; ret_tp; params; body = func_body; loc = func_decl_loc} = fd in
+  let Ast.FuncDecl{name = Ident{name = func_name; loc = _}; ret_tp; params; body = func_body; loc = func_decl_loc} = fd in
   let func_name_sym = Symbol.symbol func_name in
   let typed_params = infertype_param_list ~reportError:false env params in
   let param_syms = get_param_sym_list typed_params in
@@ -344,7 +344,7 @@ let typecheck_func_decl env fd =
     else ()
   in
   let decl_fun_tp = TAst.FunTyp{ret = typecheck_typ ret_tp; params = typed_params} in
-  let Ast.FuncBody{stms; loc} = func_body in
+  let Ast.FuncBody{stms; _} = func_body in
   let env2 = Env.{env with expected_ret_tp = typecheck_typ ret_tp} in
   let env3 = List.fold_left insert_param_to_env env2 typed_params in
   let typed_stms, final_env = typecheck_statement_seq env3 stms in

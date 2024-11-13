@@ -1,5 +1,6 @@
 (* -- Use this in your solution without modifications *)
 module PBox = PrintBox
+open Lexing
 
 type location = {start_pos : Lexing.position; end_pos : Lexing.position}
 
