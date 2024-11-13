@@ -1,0 +1,51 @@
+// Positive comma expr (with parentheses) test
+
+bool is_prime(x:int) {
+    if (x < 2) return false;
+    for (var i = 2; i < x; i = i+1) {
+        if (x%i == 0) return false;
+    }
+    return true;
+}
+
+int is_prime_int(x:int) {
+    if (is_prime(x)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int main() {
+    var x = 12;
+    print_integer((print_integer(x), is_prime_int(x)));
+    var x = 17;
+    print_integer((print_integer(x), is_prime_int(x)));
+
+    var x = 419;
+    print_integer(x); //419
+
+    var y = (x+1, x);
+    print_integer(y); //419
+
+    var y = (x=x+1, x);
+    print_integer(y); //420
+
+    var z = x = (x+1, x);
+    print_integer(z); //420
+
+    var z = x = (x=x+1, x);
+    print_integer(z); //421
+
+    var a = (x = x+1, x+2);
+    print_integer(a); //424
+ 
+    var t = (print_integer(x), print_integer(y), x+y); //422, 420
+    print_integer(t); //842
+
+    x = (x+1, x+2);
+    print_integer(x); //424
+
+    var b = 30;
+    return (print_integer(b+100), b+100); //130
+}

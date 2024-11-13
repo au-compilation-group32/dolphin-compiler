@@ -52,6 +52,7 @@ let rec expr_to_tree e =
       [typ_to_tree tp; 
       PBox.hlist ~bars:false [Pretty.make_info_node_line "FunName: "; ident_to_tree fname];
         PBox.tree (Pretty.make_info_node_line "Args") (List.map (fun e -> expr_to_tree e) args)]
+  | Comma {left; right; _} -> PBox.tree (Pretty.make_info_node_line "Comma") [expr_to_tree left; expr_to_tree right]
 and lval_to_tree l =
   match l with
   | Var {ident; tp} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "Var("; ident_to_tree ident; Pretty.make_info_node_line ")"; PBox.line " : "; typ_to_tree tp;]

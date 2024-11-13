@@ -93,6 +93,7 @@ let rec codegen_expr env expr =
   | TAst.Lval lvl ->  codegen_lval env lvl
   | TAst.Assignment {lvl; rhs; tp} -> codegen_assignment env lvl rhs tp
   | TAst.Call {fname; args; tp} ->  codegen_call env fname args tp
+  | TAst.Comma {left; right; tp} -> codegen_comma env left right tp
 and codegen_binop env left op right tp =
   let ll_tp = ll_type_of tp in
   let left_buildlets, left_tp, left_op = codegen_expr env left in
@@ -148,7 +149,12 @@ and codegen_call env fname args tp =
     | TAst.Int | TAst.Bool -> CfgBuilder.add_insn (Some ret_op, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
     | TAst.Void | TAst.ErrorType -> CfgBuilder.add_insn (None, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
   in (folded_buildlets @ [call_insn], ll_ret_tp, Ll.Id ret_op)
-
+and codegen_comma env left right tp =
+  let ll_tp = ll_type_of tp in
+  let left_buildlets, _, _ = codegen_expr env left in
+  let right_buildlets, right_tp, right_op = codegen_expr env right in
+  let _ = assert(ll_tp = right_tp) in
+  (left_buildlets @ right_buildlets, right_tp, right_op)
 
 let codegen_var_delc env var = match var with
   | TAst.Declaration {name : TAst.ident; tp : TAst.typ; body : TAst.expr} -> 

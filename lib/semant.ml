@@ -55,7 +55,7 @@ let rec infertype_expr env expr =
   | Ast.Lval lvl -> infertype_lval env lvl
   | Ast.Assignment {lvl; rhs; loc} -> infertype_assignment env lvl rhs loc
   | Ast.Call {fname; args; loc} -> infertype_call env fname args loc
-  | Ast.Comma {left; right; loc} -> raise Unimplemented
+  | Ast.Comma {left; right; loc} -> infertype_comma env left right loc
 and infertype_binop env left op right loc =
     match op with
     | Plus _ | Minus _ | Mul _ | Div _ | Rem _ | Lt _ | Le _ | Gt _ | Ge _ | Lor _ | Land _ -> 
@@ -129,6 +129,10 @@ and infertype_call env fname args loc =
           let typecheck_param arg (TAst.Param {paramname = _; typ}) = typecheck_expr env arg typ in
           let typed_params = List.map2 typecheck_param args params in
           (TAst.Call {fname = TAst.Ident {sym = fun_sym}; args = typed_params; tp = ret}, ret, loc)
+and infertype_comma env left right loc =
+  let left_texpr, _, _ = infertype_expr env left in
+  let right_texpr, right_tp, _ = infertype_expr env right in
+  TAst.Comma {left = left_texpr; right = right_texpr; tp = right_tp}, right_tp, loc
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp , loc = infertype_expr env expr in

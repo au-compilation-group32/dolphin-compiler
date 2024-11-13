@@ -91,6 +91,11 @@ exp:
 | l = lval {Ast.Lval l}
 | l = lval ASSIGN ex = exp {Ast.Assignment{lvl = l; rhs = ex; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | i = id LPAREN expList = separated_list(COMMA, exp) RPAREN {Ast.Call{fname = i; args = expList; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| LPAREN e = comma_exp RPAREN {e}
+
+comma_exp:
+| l = exp COMMA r = exp {Ast.Comma{left = l; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| l = comma_exp COMMA r = exp {Ast.Comma{left = l; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 lval:
 | i = IDENT {Ast.Var (Ast.Ident {name = i; loc = {start_pos = $startpos; end_pos = $endpos}})}
@@ -105,6 +110,7 @@ decl_list:
 
 for_init:
 | e = exp {Ast.FIExpr e}
+| e = comma_exp {Ast.FIExpr e}
 | VAR dl = decl_list {Ast.FIDecl (Ast.DeclBlock{declarations = dl; loc = {start_pos = $startpos; end_pos = $endpos}})}
 
 stm:
@@ -119,6 +125,7 @@ stm:
 | CONTINUE SEMICOLON {Ast.ContinueStm{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | cs = compound_stm {Ast.CompoundStm{stms = cs; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | RETURN e = exp? SEMICOLON {Ast.ReturnStm{ret = e; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| RETURN e = comma_exp SEMICOLON {Ast.ReturnStm{ret = Some(e); loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 compound_stm:
   LBRACE sl = stm_list RBRACE {sl}

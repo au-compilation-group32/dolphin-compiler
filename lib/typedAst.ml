@@ -19,6 +19,7 @@ type expr =
 | Lval of lval
 | Assignment of {lvl : lval; rhs : expr; tp : typ}
 | Call of {fname : ident; args : expr list; tp : typ}
+| Comma of {left : expr; right : expr; tp : typ}
 and lval =
 | Var of {ident : ident; tp : typ}
 
