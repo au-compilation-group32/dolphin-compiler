@@ -25,7 +25,7 @@ Or you can run all tests by
 bash run_all_test.sh
 ```
 
-This script will crash if one of the test failed.
+This script runs all the tests without any output. It will crash if one of the test failed. If you want more output (i.e. Ast printing, error list printing, ...), please run single test case.
 
 I also provide ``compile_prog`` in ``bin/compile.ml``, you can run it with
 
@@ -37,16 +37,34 @@ dune exec bin/compile.exe test/test1/main.dlp
 
 There is a function called run_testcase in lib/testUtils.ml that run the test case.
 
-Each test case is stored in a directory (i.e. test1). Inside this, testCase.ml stores the Ast, run semant on it. If semant success, it will compile the prog in to dolphin_main.ll, and link it using clang. The script will then run the a.out executable on the input file input.txt and produce output_actual.txt. Finally, the script compares output_actual.txt and output_expected.txt.
+Each test case is stored in a directory (i.e. test1). Inside this, main.dlp stores the source code, run parsing and semant on it. If semant success, it will compile the prog in to dolphin_main.ll, and link it using clang. The script will then run the a.out executable on the input file input.txt and produce output_actual.txt. Finally, the script compares output_actual.txt and output_expected.txt.
 
 If semant fail, output_actual.txt and output_expected.txt is the list of errors instead
 
-### Lexer and parser explanation
+## Tasks explanation
 
-The source code is provided in ``lib/srcProcessor``
+### Task 1:
+
+We make ReturnStm ret an optional expr to support return void.
+
+### Task 2:
+
+We treat comma expr as an independent pattern rather than incoporate it with other expr. However, a comma expr that enclosed by a pair of parentheses are treat as a proper expr since it is valid anywhere an expr is expected.
+
+We use a pattern called ``exp_or_comma_exp`` anywhere a comma expr is valid with or without parentheses.
+
+### Task 3:
+
+We add 2 new variables to the environment, ``expected_ret_tp`` to keep track of the return type, and ``has_all_paths_returned`` to keep track of the return status.
+
+The first pass is inside the function ``add_decl_func_to_env``. The second pass is just List.map on the prog.
+
+### Task 5:
+
+Test 44 to 57 are new tests.
 
 ## TODO list:
 
-- Terminate unreachable code by Unreachable: Currently, an unreachable code (i.e. code after Continue and break) is still terminated by a normal branch statement.
+- Fix edge case of min negative integer.
 - Test all BiNops
 - Improve test22: Currently only check for error in the outermost scope, need to check the scope of inner loops as well.
