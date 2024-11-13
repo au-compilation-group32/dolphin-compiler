@@ -1,0 +1,32 @@
+// Negative namespace test
+
+void foo(x: int) {
+}
+
+int bar(x: int) {
+    return x;
+}
+
+int z(z: int) {
+    print_integer(z());
+    return z;
+}
+
+int main() {
+    var x = 419;
+    foo(419);
+    var y = bar(419);
+
+    print_integer(bar(101));
+    print_integer(read_integer());
+
+    var foo = 100;
+    var bar = 101;
+    var read_integer = 102;
+
+    print_integer(foo(100));
+    print_integer(bar(101));
+    print_integer(read_integer());
+    print_integer(z(103));
+    return 0;
+}

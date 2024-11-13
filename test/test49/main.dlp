@@ -1,0 +1,28 @@
+// Positive function scoping
+
+void foo(x: int) {
+    print_integer(x);
+    if (true) {
+        var x = 4190;
+        print_integer(x);
+    }
+    print_integer(x);
+    if (true) {
+        x = 4191;
+        print_integer(x);
+    }
+    print_integer(x);
+    var x = 4192;
+    print_integer(x);
+}
+
+void inc(x: int) {
+    x = x+1;
+}
+int main() {
+    var x = 419;
+    foo(419);
+    inc(x);
+    print_integer(x);
+    return 0;
+}

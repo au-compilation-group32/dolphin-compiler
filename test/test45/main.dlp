@@ -21,6 +21,44 @@ void print_bool2 (b: bool) {
 void print_bool3 (b: bool) {
     if (b) {
         print_integer(1);
+    } else {
+        print_integer(0);
+        return;
+    }
+}
+
+void print_bool4 (b: bool) {
+    if (b) {
+        print_integer(1);
+        return;
+    } else {
+        print_integer(0);
+    }
+}
+
+void print_bool5 (b: bool) {
+    if (b) {
+        print_integer(1);
+    } else {
+        print_integer(0);
+        return;
+    }
+    return;
+}
+
+void print_bool6 (b: bool) {
+    if (b) {
+        print_integer(1);
+        return;
+    } else {
+        print_integer(0);
+    }
+    return;
+}
+
+void print_bool7 (b: bool) {
+    if (b) {
+        print_integer(1);
         return;
     } else {
         print_integer(0);
@@ -36,5 +74,13 @@ int main () {
     print_bool2(false);
     print_bool3(true);
     print_bool3(false);
+    print_bool4(true);
+    print_bool4(false);
+    print_bool5(true);
+    print_bool5(false);
+    print_bool6(true);
+    print_bool6(false);
+    print_bool7(true);
+    print_bool7(false);
     return 0;
 }

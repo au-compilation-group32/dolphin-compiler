@@ -1,0 +1,31 @@
+// Negative missing main and duplicated function names
+
+int main1() {
+    var x = 419;
+    print_integer(419);
+    return 0;
+}
+
+int main2() {
+    var x = 419;
+    print_integer(419);
+    return 0;
+}
+
+int main2() {
+    var x = 419;
+    print_integer(419);
+    return 0;
+}
+
+int main3() {
+    var x = 419;
+    print_integer(419);
+    return 0;
+}
+
+int main1() {
+    var x = 419;
+    print_integer(419);
+    return 0;
+}

@@ -330,7 +330,6 @@ let get_param_sym_list typed_params =
 
 let typecheck_func_decl env fd =
   let Ast.FuncDecl{name = Ident{name = func_name; loc = func_name_loc}; ret_tp; params; body = func_body; loc = func_decl_loc} = fd in
-  (* TODO: check for duplicated paramname *)
   let func_name_sym = Symbol.symbol func_name in
   let typed_params = infertype_param_list ~reportError:false env params in
   let param_syms = get_param_sym_list typed_params in

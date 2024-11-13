@@ -16,8 +16,25 @@ int is_prime_int(x:int) {
     }
 }
 
+int is_prime_int2(x:int) {
+    if (is_prime(x)) {
+        return 1;
+    }
+    return 0;
+}
+
+int is_prime_int3(x:int) {
+    if (is_prime(x))
+        return 1;
+    return 0;
+}
+
 int main() {
     print_integer(is_prime_int(12));
     print_integer(is_prime_int(17));
+    print_integer(is_prime_int2(12));
+    print_integer(is_prime_int2(17));
+    print_integer(is_prime_int3(12));
+    print_integer(is_prime_int3(17));
     return 0;
 }

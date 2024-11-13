@@ -1,0 +1,3 @@
+[36m@ 15:4-9[0m: Function main2 has already been declared. Duplicated function names are not allowed.
+[36m@ 27:4-9[0m: Function main1 has already been declared. Duplicated function names are not allowed.
+Main function missing.

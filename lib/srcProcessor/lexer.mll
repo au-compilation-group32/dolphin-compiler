@@ -63,6 +63,7 @@ rule token = parse
 | "byte" {BYTE}
 | "void" {VOID}
 | "record" {RECORD}
+(* TODO: handle min negative int*)
 | '0' | ['1'-'9']['0'-'9']* as s {
     let loc = {start_pos = (Lexing.lexeme_start_p lexbuf); end_pos = (Lexing.lexeme_end_p lexbuf)} in
     match Int64.of_string_opt s with

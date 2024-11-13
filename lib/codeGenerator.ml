@@ -205,7 +205,6 @@ let rec codegen_statement env stm =
       end in
     let term_blk_elbro = CfgBuilder.term_block(Ll.Br (tmp_merge_sym)) in
     let start_blk_merge = CfgBuilder.start_block(tmp_merge_sym) in
-    (*TODO: don't add else block if it is None*)
     (cond_buildlets @ [term_blk_cond] @ [start_blk_then] @ buildlets_blk_then @ [term_blk_then] @ [start_blk_else] @ buildlets_blk_elbro @ [term_blk_elbro] @ [start_blk_merge], env)
   | TAst.CompoundStm {stms} ->
     let buildlets, _ = codegen_statement_seq env stms in
