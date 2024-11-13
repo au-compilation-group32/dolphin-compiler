@@ -1,0 +1,7 @@
+// Negative comma expr with var decl test
+
+int main() {
+    var x = 419;
+    var y = x+1, x;
+    return 0;
+}

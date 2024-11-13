@@ -1,6 +1,5 @@
-100
-101
-102
-103
-103
-return 0
+[36m@ 21:4-52[0m: Function print_integer expects 1 params, but is given 2 params.
+[36m@ 26:4-17[0m: Expression Statement must be either Call or Assignment
+[36m@ 30:4-17[0m: Expression Statement must be either Call or Assignment
+[36m@ 36:4-21[0m: Expression Statement must be either Call or Assignment
+[36m@ 40:4-21[0m: Expression Statement must be either Call or Assignment

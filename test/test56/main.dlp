@@ -1,27 +1,45 @@
-// Positive namespace test
+// Negative comma expr test
 
-void foo(x: int) {
+bool is_prime(x:int) {
+    if (x < 2) return false;
+    for (var i = 2; i < x; i = i+1) {
+        if (x%i == 0) return false;
+    }
+    return true;
 }
 
-int bar(x: int) {
-    return x;
-}
-
-int z(z: int) {
-    print_integer(z);
-    return z;
+int is_prime_int(x:int) {
+    if (is_prime(x)) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 int main() {
+    var x = 12;
+    print_integer(print_integer(x), is_prime_int(x));
+
     var x = 419;
-    foo(419);
-    var y = bar(419);
-    var foo = 100;
-    var bar = 101;
-    var read_integer = 102;
-    print_integer(foo);
-    print_integer(bar);
-    print_integer(read_integer);
-    print_integer(z(103));
-    return 0;
+    print_integer(x);
+
+    x = x+1, x+2;
+    print_integer(x);
+
+    var y = 0;
+    y = x=x+1, x;
+    print_integer(y);
+
+    var z = 0;
+    print_integer(z); //420
+
+    z = x = x=x+1, x;
+    print_integer(z); //421
+
+    var a = 0;
+    a = x = x+1, x+2;
+    print_integer(a);
+ 
+    var b = 30;
+    return print_integer(b+100), b+100;
 }

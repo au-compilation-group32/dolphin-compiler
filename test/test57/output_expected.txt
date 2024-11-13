@@ -1,0 +1,1 @@
+[36m@ 5:18-19[0m: Syntax error near ';'.

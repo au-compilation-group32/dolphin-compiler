@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NUM_TEST=55
+NUM_TEST=57
 
 for i in $(seq 1 $NUM_TEST)
 do
