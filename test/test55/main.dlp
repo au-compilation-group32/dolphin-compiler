@@ -1,0 +1,39 @@
+// Positive comma expr in loop test
+
+int main() {
+
+    if (10<12 , 10>12) {
+        print_integer(1);
+    } else {
+        print_integer(0);
+    }
+
+    if (10>12 , 10<12) {
+        print_integer(1);
+    } else {
+        print_integer(0);
+    }
+
+    var i = 0;
+    while (i=i+1, i<5) {
+        print_integer(i);
+    }
+
+    var i = 0, j=0, k =0;
+    var x = 0;
+    for (i=0, j= 0, k = 0; print_integer(i), j<3, k<4; i=i+1, j=j+1, k =k+1) {
+        print_integer(i);
+        print_integer(j);
+        print_integer(k);
+    }
+
+    var x = 0;
+    for (i=0, j= 0, k = 0; print_integer(i), j=j+1, k<4; i=i+1, j=j+1, k =k+1) {
+        print_integer(i);
+        print_integer(j);
+        print_integer(k);
+    }
+
+    var b = 30;
+    return print_integer(b+100), b+100; //130
+}

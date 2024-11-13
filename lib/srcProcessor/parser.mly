@@ -97,6 +97,10 @@ comma_exp:
 | l = exp COMMA r = exp {Ast.Comma{left = l; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = comma_exp COMMA r = exp {Ast.Comma{left = l; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
+exp_or_comma_exp:
+| e = exp {e}
+| e = comma_exp {e}
+
 lval:
 | i = IDENT {Ast.Var (Ast.Ident {name = i; loc = {start_pos = $startpos; end_pos = $endpos}})}
 
@@ -109,23 +113,21 @@ decl_list:
 | d = single_decl COMMA dl = decl_list {d::dl}
 
 for_init:
-| e = exp {Ast.FIExpr e}
-| e = comma_exp {Ast.FIExpr e}
+| e = exp_or_comma_exp {Ast.FIExpr e}
 | VAR dl = decl_list {Ast.FIDecl (Ast.DeclBlock{declarations = dl; loc = {start_pos = $startpos; end_pos = $endpos}})}
 
 stm:
 | VAR dl = decl_list SEMICOLON {Ast.VarDeclStm (Ast.DeclBlock {declarations = dl; loc = {start_pos = $startpos; end_pos = $endpos}})}
-| e = exp SEMICOLON {Ast.ExprStm{expr = Some (e); loc = {start_pos = $startpos; end_pos = $endpos}}}
+| e = exp_or_comma_exp SEMICOLON {Ast.ExprStm{expr = Some (e); loc = {start_pos = $startpos; end_pos = $endpos}}}
 | SEMICOLON {Ast.ExprStm{expr = None; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| IF LPAREN c = exp RPAREN t = stm {Ast.IfThenElseStm{cond = c; thbr = t; elbro = None; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| IF LPAREN c = exp RPAREN t = stm ELSE e = stm {Ast.IfThenElseStm{cond = c; thbr = t; elbro = Some e; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| WHILE LPAREN c = exp RPAREN t = stm {Ast.WhileStm{cond = c; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| FOR LPAREN i = for_init? SEMICOLON c = exp? SEMICOLON u = exp? RPAREN t = stm {Ast.ForStm{init = i; cond = c; update = u; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| IF LPAREN c = exp_or_comma_exp RPAREN t = stm {Ast.IfThenElseStm{cond = c; thbr = t; elbro = None; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| IF LPAREN c = exp_or_comma_exp RPAREN t = stm ELSE e = stm {Ast.IfThenElseStm{cond = c; thbr = t; elbro = Some e; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| WHILE LPAREN c = exp_or_comma_exp RPAREN t = stm {Ast.WhileStm{cond = c; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| FOR LPAREN i = for_init? SEMICOLON c = exp_or_comma_exp? SEMICOLON u = exp_or_comma_exp? RPAREN t = stm {Ast.ForStm{init = i; cond = c; update = u; body = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | BREAK SEMICOLON {Ast.BreakStm{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | CONTINUE SEMICOLON {Ast.ContinueStm{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | cs = compound_stm {Ast.CompoundStm{stms = cs; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| RETURN e = exp? SEMICOLON {Ast.ReturnStm{ret = e; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| RETURN e = comma_exp SEMICOLON {Ast.ReturnStm{ret = Some(e); loc = {start_pos = $startpos; end_pos = $endpos}}}
+| RETURN e = exp_or_comma_exp? SEMICOLON {Ast.ReturnStm{ret = e; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 compound_stm:
   LBRACE sl = stm_list RBRACE {sl}
