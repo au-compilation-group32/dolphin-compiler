@@ -90,7 +90,7 @@ let rec statement_to_tree c =
   | BreakStm -> Pretty.make_keyword_line "BreakStm"
   | ContinueStm -> Pretty.make_keyword_line "ContinueStm"
   | CompoundStm {stms; _} -> PBox.tree (Pretty.make_info_node_line "CompoundStm") (statement_seq_to_forest stms)
-  | ReturnStm {ret; _} -> PBox.hlist ~bars:false [Pretty.make_keyword_line "ReturnValStm: "; expr_to_tree ret]
+  | ReturnStm {ret; _} -> PBox.hlist ~bars:false [Pretty.make_keyword_line "ReturnValStm: "; Option.fold ~none:PBox.empty ~some:expr_to_tree ret]
 and statement_seq_to_forest stms = List.map statement_to_tree stms
 
 let func_body_to_tree stms = 

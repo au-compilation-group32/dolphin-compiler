@@ -263,12 +263,24 @@ let rec typecheck_statement env stm =
     let has_returned = Env.has_all_paths_returned env2 in
     let final_env = Env.{env with has_all_paths_returned = has_returned} in
     let x : TAst.statement = TAst.CompoundStm {stms = tstmt_list} in (x, final_env)
-  | Ast.ReturnStm {ret; loc = _} ->
-    (* TODO: support return void *)
+  | Ast.ReturnStm {ret; loc} ->
     let expected_ret_tp = Env.expected_ret_tp env in
-    let b = typecheck_expr env ret expected_ret_tp in 
+    let typed_ret = match ret with
+      | None ->
+        let _ =
+          if expected_ret_tp <> TAst.Void
+          then Env.insert_error env (Errors.FunctionUnexpectedReturnVoid {loc = loc; typ = expected_ret_tp})
+          else () in
+        None
+      | Some r ->
+        let _ =
+          if expected_ret_tp = TAst.Void
+          then Env.insert_error env (Errors.FunctionVoidReturnExpr {loc = loc})
+          else () in
+        Some (typecheck_expr env r expected_ret_tp)
+    in
     let final_env = Env.{env with has_all_paths_returned = true} in
-    let x = TAst.ReturnStm {ret=b} in (x, final_env)
+    let x = TAst.ReturnStm {ret = typed_ret} in (x, final_env)
 
 (* should use typecheck_statement to check the block of statements. *)
 and typecheck_statement_seq env stms =
@@ -318,7 +330,7 @@ let typecheck_func_decl env fd =
   let env3 = List.fold_left insert_param_to_env env2 typed_params in
   let typed_stms, final_env = typecheck_statement_seq env3 stms in
   let _ =
-    if not (Env.has_all_paths_returned final_env)
+    if (typecheck_typ ret_tp) <> TAst.Void && not (Env.has_all_paths_returned final_env)
     then Env.insert_error final_env (Errors.FunctionMissingReturn{loc = func_decl_loc; sym = func_name_sym})
     else () in
   TAst.FuncDecl{name = TAst.Ident {sym = func_name_sym}; fun_tp = decl_fun_tp; body = typed_stms}

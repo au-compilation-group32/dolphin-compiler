@@ -42,7 +42,7 @@ type statement =
 | BreakStm
 | ContinueStm
 | CompoundStm of {stms : statement list}
-| ReturnStm of {ret : expr}
+| ReturnStm of {ret : expr option}
 
 type param = Param of {paramname: ident; typ : typ}
 

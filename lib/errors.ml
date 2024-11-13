@@ -25,6 +25,8 @@ type error =
 | FunctionMissingReturn of {loc: Location.location; sym: Sym.symbol}
 | MainFunctionMissing
 | FunctionMainInvalidSignature
+| FunctionVoidReturnExpr of {loc: Location.location}
+| FunctionUnexpectedReturnVoid of {loc: Location.location; typ: TAst.typ}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -47,3 +49,5 @@ let error_to_string err =
   | FunctionMissingReturn {loc; sym} -> Printf.sprintf "%s: Function %s has no return or not all paths have return." (loc_to_string loc) (Sym.name sym)
   | MainFunctionMissing -> Printf.sprintf "Main function missing."
   | FunctionMainInvalidSignature -> Printf.sprintf "Function main must have type () -> int."
+  | FunctionVoidReturnExpr {loc} -> Printf.sprintf "%s: Return statement of void function expect no expression." (loc_to_string loc)
+  | FunctionUnexpectedReturnVoid {loc; typ} -> Printf.sprintf "%s: Return statement have a void expression, expect expression of type %s." (loc_to_string loc) (TPretty.typ_to_string typ)

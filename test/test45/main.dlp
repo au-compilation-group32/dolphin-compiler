@@ -1,0 +1,40 @@
+// Test positive return void
+
+void print_bool (b: bool) {
+    if (b) {
+        print_integer(1);
+    } else {
+        print_integer(0);
+    }
+}
+
+void print_bool2 (b: bool) {
+    if (b) {
+        print_integer(1);
+        return;
+    } else {
+        print_integer(0);
+        return;
+    }
+}
+
+void print_bool3 (b: bool) {
+    if (b) {
+        print_integer(1);
+        return;
+    } else {
+        print_integer(0);
+        return;
+    }
+    return;
+}
+
+int main () {
+    print_bool(true);
+    print_bool(false);
+    print_bool2(true);
+    print_bool2(false);
+    print_bool3(true);
+    print_bool3(false);
+    return 0;
+}

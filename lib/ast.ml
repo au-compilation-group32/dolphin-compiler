@@ -56,7 +56,7 @@ type statement =
 | BreakStm of {loc : Loc.location}
 | ContinueStm of {loc : Loc.location}
 | CompoundStm of {stms : statement list; loc : Loc.location}
-| ReturnStm of {ret : expr; loc : Loc.location}
+| ReturnStm of {ret : expr option; loc : Loc.location}
 
 type param = Param of {paramname : ident; typ : typ; loc : Loc.location}
 

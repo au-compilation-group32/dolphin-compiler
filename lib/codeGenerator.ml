@@ -292,8 +292,13 @@ let rec codegen_statement env stm =
     let result = init_buildlets @ [term_blk_init] @ [start_blk_cond] @ cond_buildlets @ [term_blk_cond] @ [start_blk_body] @ buildlets_blk_body @ [term_blk_body] @ [start_blk_update] @ update_buildlets @ [term_blk_update] @ [start_blk_merge] in
     (result, env)
   | TAst.ReturnStm {ret} ->
-    let buildlets, ret_tp, ret_operand = codegen_expr env ret in
-    let tr = CfgBuilder.term_block (Ll.Ret (ret_tp, Some ret_operand)) in
+    let buildlets, tr = match ret with
+      | Some (r) ->
+        let ret_buildlets, ret_tp, ret_operand = codegen_expr env r in
+        let tr = CfgBuilder.term_block (Ll.Ret (ret_tp, Some ret_operand)) in
+        ret_buildlets, tr
+      | None -> [], CfgBuilder.term_block (Ll.Ret (Ll.Void, None))
+    in
     let new_env, new_block_sym = Env.insert_label env in
     let start_new_blk = CfgBuilder.start_block(new_block_sym) in
     (buildlets @ [tr; start_new_blk], new_env)
@@ -336,7 +341,10 @@ let codegen_func_decl env fd =
   let builder = CfgBuilder.empty_cfg_builder in
   let params_buildlets, params_uids, env_with_arg = codegen_param_list env params in
   let body_buildlets, _ = codegen_statement_seq env_with_arg body in
-  let final_term = CfgBuilder.term_block (Ll.Unreachable) in
+  let final_term =
+    if ret = TAst.Void
+    then CfgBuilder.term_block (Ll.Ret (Ll.Void, None))
+    else CfgBuilder.term_block (Ll.Unreachable) in
   let seq_buildlets = CfgBuilder.seq_buildlets (params_buildlets @ body_buildlets @ [final_term]) in
   let cfg = CfgBuilder.get_cfg (seq_buildlets builder) in
   let ll_fdecl = Ll.{fty = ll_ftyp; param = params_uids; cfg = cfg} in
