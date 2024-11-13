@@ -291,12 +291,17 @@ and typecheck_statement_seq env stms =
     let typed_t, env2 = typecheck_statement_seq env1 t in
     (typed_h :: typed_t, env2)
 
-let infertype_param p =
-  (*TODO: check for void type*)
-  let Ast.Param{paramname = Ast.Ident{name = name; loc = _}; typ; loc = _} = p in
-  TAst.Param {paramname = TAst.Ident{sym= (Symbol.symbol name)}; typ = typecheck_typ typ}
+let infertype_param ~reportError env p =
+  let Ast.Param{paramname = Ast.Ident{name = name; loc = _}; typ; loc = loc} = p in
+  let param_sym = Symbol.symbol name in
+  let _ =
+    if reportError && typecheck_typ typ = TAst.Void
+    then Env.insert_error env (Errors.FunctionParamInvalidTypeVoid {loc = loc; sym = param_sym})
+    else ()
+  in
+  TAst.Param {paramname = TAst.Ident{sym = param_sym}; typ = typecheck_typ typ}
 
-let infertype_param_list params = List.map infertype_param params
+let infertype_param_list ~reportError env params = List.map (infertype_param ~reportError:reportError env) params
 
 let rec add_decl_func_to_env env fd_list =
   let Env.{idents; _} = env in
@@ -306,7 +311,7 @@ let rec add_decl_func_to_env env fd_list =
     let Ast.FuncDecl{name = Ident{name; loc = fname_loc}; ret_tp; params; body = _; loc = _} = h in
     let sym = Symbol.symbol name in
     let typed_ret_tp = typecheck_typ ret_tp in
-    let typed_params = List.map infertype_param params in
+    let typed_params = infertype_param_list ~reportError:true env params in
     let fun_typ = TAst.FunTyp{ret = typed_ret_tp; params = typed_params} in
     let _ = 
       if Symbol.Table.mem sym idents
@@ -323,7 +328,7 @@ let typecheck_func_decl env fd =
   let Ast.FuncDecl{name = Ident{name = func_name; loc = func_name_loc}; ret_tp; params; body = func_body; loc = func_decl_loc} = fd in
   (* TODO: check for duplicated paramname *)
   let func_name_sym = Symbol.symbol func_name in
-  let typed_params = infertype_param_list params in
+  let typed_params = infertype_param_list ~reportError:false env params in
   let decl_fun_tp = TAst.FunTyp{ret = typecheck_typ ret_tp; params = typed_params} in
   let Ast.FuncBody{stms; loc} = func_body in
   let env2 = Env.{env with expected_ret_tp = typecheck_typ ret_tp} in
@@ -347,8 +352,10 @@ let check_main_func env =
 
 let typecheck_prog prog =
   let library_env = Env.make_env Library.library_functions in
+  (* Run first pass to add all the declared functions, in case of recursive call*)
   let env = add_decl_func_to_env library_env prog in
   let _ = check_main_func env in
+  (* Run second pass for semantic analysis*)
   let tprog = List.map (typecheck_func_decl env) prog in
   tprog, Env.(env.errors)
 

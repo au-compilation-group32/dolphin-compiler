@@ -1,0 +1,14 @@
+// Test negative function param type void
+
+int foo(v: void) {
+    return 0;
+}
+
+void bar(v: void) {
+}
+
+int main () {
+    foo(print_integer(0));
+    bar(print_integer(0));
+    return 0;
+}
