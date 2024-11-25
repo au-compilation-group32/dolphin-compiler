@@ -7,11 +7,14 @@ exception Unimplemented (* your code should eventually compile without this exce
 exception UnreachableControlFlow
 exception UnexpectedErrorType
 
-let typecheck_typ = function
+let rec typecheck_typ = function
 | Ast.Int _ -> TAst.Int
 | Ast.Bool _ -> TAst.Bool
 | Ast.Void _ -> TAst.Void
-| _ -> raise Unimplemented
+| Ast.Byte _ -> TAst.Byte
+| Ast.Str _ -> TAst.Str
+| Ast.Array {typ; _} -> TAst.Array {typ = typecheck_typ typ}
+| Ast.Record {recordname; _} -> raise Unimplemented
 
 let typecheck_binop = function
 | Ast.Plus _ -> TAst.Plus

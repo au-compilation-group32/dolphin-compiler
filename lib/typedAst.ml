@@ -39,6 +39,8 @@ type expr =
 | Comma of {left : expr; right : expr; tp : typ}
 and lval =
 | Var of {ident : ident; tp : typ}
+| Idx of {arr: expr; index: expr}
+| Fld of {record: expr; field: fieldname}
 and record_field_init = RecordFieldInit of {recordname: recordname; expr: expr}
 
 type single_declaration = Declaration of {name : ident; tp : typ; body : expr}
