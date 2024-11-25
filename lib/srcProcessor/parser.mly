@@ -53,6 +53,12 @@
 id:
 | i = IDENT {Ast.Ident {name = i; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
+rec_name:
+| i = IDENT {Ast.RecordName {name = i; loc = {start_pos = $startpos; end_pos = $endpos}}}
+
+field_name:
+| i = IDENT {Ast.FieldName {name = i; loc = {start_pos = $startpos; end_pos = $endpos}}}
+
 tp:
 | INT {Ast.Int {loc = {start_pos = $startpos; end_pos = $endpos}}}
 | BOOL {Ast.Bool {loc = {start_pos = $startpos; end_pos = $endpos}}}
@@ -147,5 +153,17 @@ func_decl:
     Ast.FuncDecl{name = i; ret_tp = t; params = pl; body = fb; loc = {start_pos = $startpos; end_pos = $endpos}}
   }
 
+rec_field:
+  name = field_name COLON t = tp {Ast.RecordField {fieldname = name; typ = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
+
+rec_decl:
+  RECORD name = rec_name LBRACE fl = separated_list(SEMICOLON, rec_field) RBRACE {
+    Ast.RecDecl {rec_name = name; fields = fl; loc = {start_pos = $startpos; end_pos = $endpos}}
+  }
+
+toplevel_decl:
+| rd = rec_decl {Ast.RecordDeclaration rd}
+| fd = func_decl {Ast.FunctionDeclaration fd}
+
 prog:
-  fl = list(func_decl) EOF {fl}
+  fl = list(toplevel_decl) EOF {fl}

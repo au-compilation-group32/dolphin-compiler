@@ -71,7 +71,7 @@ type funtype = FunTyp of {ret : typ; params : param list}
 
 type function_declaration = FuncDecl of {name : ident; fun_tp : funtype; body : statement list}
 
-type record_field = RecordField of {recordname: recordname; typ: typ}
+type record_field = RecordField of {fieldname: fieldname; typ: typ}
 
 type record_declaration = RecDecl of {rec_name: recordname; fields: record_field list}
 

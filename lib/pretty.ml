@@ -5,18 +5,22 @@ open Ast
 let typ_style = PBox.Style.fg_color PBox.Style.Green
 let ident_style = PBox.Style.fg_color PBox.Style.Yellow
 let fieldname_style = ident_style
+let recordname_style = ident_style
 let keyword_style = PBox.Style.fg_color PBox.Style.Blue
 
 let info_node_style = PBox.Style.fg_color PBox.Style.Cyan
 
 let make_typ_line name = PBox.line_with_style typ_style name
 let make_fieldname_line name = PBox.line_with_style fieldname_style name
+let make_recordname_line name = PBox.line_with_style recordname_style name
 let make_ident_line name = PBox.line_with_style ident_style name
 let make_keyword_line name = PBox.line_with_style keyword_style name
 
 let make_info_node_line info = PBox.line_with_style info_node_style info
 
 let ident_to_tree (Ident {name; _}) = make_ident_line name
+let fieldname_to_tree (FieldName {name; _}) = make_fieldname_line name
+let recordname_to_tree (RecordName {name; _}) = make_recordname_line name
 
 let typ_to_tree tp =
   match tp with
@@ -116,5 +120,20 @@ let func_decl_to_tree fd =
     PBox.hlist ~bars:false [PBox.tree (make_info_node_line "Params: ") (List.map func_decl_param_to_tree params)];
     PBox.hlist ~bars:false [PBox.tree (make_info_node_line "Body: ") (statement_seq_to_forest stms)]]
 
+let rec_field_to_tree (RecordField{fieldname; typ; _}) =
+  PBox.tree (make_keyword_line "Field") 
+    [PBox.hlist ~bars:false [make_info_node_line "FieldName: "; fieldname_to_tree fieldname]; 
+    PBox.hlist ~bars:false [make_info_node_line "Type: "; typ_to_tree typ]]
+
+let rec_decl_to_tree rd = 
+  let Ast.RecDecl {rec_name; fields; loc = _} = rd in
+  PBox.tree (make_keyword_line "RecDecl") 
+    [PBox.hlist ~bars:false [make_info_node_line "RecName: "; recordname_to_tree rec_name]; 
+    PBox.hlist ~bars:false [PBox.tree (make_info_node_line "RecFields: ") (List.map rec_field_to_tree fields)]]
+
+let toplevel_decl_to_tree = function
+| Ast.RecordDeclaration rd -> rec_decl_to_tree rd
+| Ast.FunctionDeclaration fd -> func_decl_to_tree fd
+
 let program_to_tree prog = 
-  PBox.tree (make_info_node_line "Program") (List.map func_decl_to_tree prog)
+  PBox.tree (make_info_node_line "Program") (List.map toplevel_decl_to_tree prog)

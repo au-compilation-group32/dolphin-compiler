@@ -145,7 +145,7 @@ and infertype_comma env left right loc =
   let left_texpr, _, _ = infertype_expr env left in
   let right_texpr, right_tp, _ = infertype_expr env right in
   TAst.Comma {left = left_texpr; right = right_texpr; tp = right_tp}, right_tp, loc
-and infertype_record_field_init = raise Unimplemented
+and infertype_record_field_init env = raise Unimplemented
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp , loc = infertype_expr env expr in
@@ -320,22 +320,24 @@ let infertype_param ~reportError env p =
 
 let infertype_param_list ~reportError env params = List.map (infertype_param ~reportError:reportError env) params
 
-let rec add_decl_func_to_env env fd_list =
+let rec add_toplevel_decl_to_env env td_list =
   let Env.{idents; _} = env in
-  match fd_list with
+  match td_list with
   | [] -> env
-  | h::t ->
-    let Ast.FuncDecl{name = Ident{name; loc = fname_loc}; ret_tp; params; body = _; loc = _} = h in
-    let sym = Symbol.symbol name in
-    let typed_ret_tp = typecheck_typ ret_tp in
-    let typed_params = infertype_param_list ~reportError:true env params in
-    let fun_typ = TAst.FunTyp{ret = typed_ret_tp; params = typed_params} in
-    let _ = 
-      if Symbol.Table.mem sym idents
-      then Env.insert_error env (Errors.FunctionDuplicateDeclaration{loc = fname_loc; sym = sym})
-      else () in
-    let new_env = Env.{env with idents = Env.add_fun_to_env idents (sym, fun_typ)} in
-    add_decl_func_to_env new_env t
+  | h::t -> match h with
+    | Ast.RecordDeclaration rd -> raise Unimplemented
+    | Ast.FunctionDeclaration fd -> 
+      let Ast.FuncDecl{name = Ident{name; loc = fname_loc}; ret_tp; params; body = _; loc = _} = fd in
+      let sym = Symbol.symbol name in
+      let typed_ret_tp = typecheck_typ ret_tp in
+      let typed_params = infertype_param_list ~reportError:true env params in
+      let fun_typ = TAst.FunTyp{ret = typed_ret_tp; params = typed_params} in
+      let _ = 
+        if Symbol.Table.mem sym idents
+        then Env.insert_error env (Errors.FunctionDuplicateDeclaration{loc = fname_loc; sym = sym})
+        else () in
+      let new_env = Env.{env with idents = Env.add_fun_to_env idents (sym, fun_typ)} in
+      add_toplevel_decl_to_env new_env t
 
 let insert_param_to_env env param =
   let TAst.Param {paramname = TAst.Ident {sym}; typ} = param in
@@ -367,6 +369,12 @@ let typecheck_func_decl env fd =
     else () in
   TAst.FuncDecl{name = TAst.Ident {sym = func_name_sym}; fun_tp = decl_fun_tp; body = typed_stms}
 
+let typecheck_rec_decl env rd = raise Unimplemented
+
+let typecheck_toplevel_decl env td = match td with
+| Ast.RecordDeclaration rd -> typecheck_rec_decl env rd
+| Ast.FunctionDeclaration fd -> typecheck_func_decl env fd
+
 let check_main_func env =
   match Env.lookup_var_fun env (Symbol.symbol "main") with
   | None -> Env.insert_error env Errors.MainFunctionMissing
@@ -380,27 +388,8 @@ let check_main_func env =
 let typecheck_prog prog =
   let library_env = Env.make_env Library.library_functions in
   (* Run first pass to add all the declared functions, in case of recursive call*)
-  let env = add_decl_func_to_env library_env prog in
+  let env = add_toplevel_decl_to_env library_env prog in
   let _ = check_main_func env in
   (* Run second pass for semantic analysis*)
-  let tprog = List.map (typecheck_func_decl env) prog in
+  let tprog = List.map (typecheck_toplevel_decl env) prog in
   tprog, Env.(env.errors)
-
-(* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
-(* let typecheck_prog prog =
-  let main = List.hd prog in
-  let Ast.FuncDecl {name = _; ret_tp = _; params = _; body = main_body; loc = _} = main in
-  let Ast.FuncBody {stms = stms; loc = _} = main_body in
-  let library_env = Env.make_env Library.library_functions in
-  let env = add_decl_func_to_env library_env prog in
-  let typed_stms , _ = typecheck_statement_seq env stms in 
-  let _ = match List.rev typed_stms with 
-  | [] -> Env.insert_error env Errors.NoReturn
-  | h::_ -> 
-    begin match h with 
-      | TAst.ReturnStm _ -> ()
-      | TAst.VarDeclStm _ | TAst.ExprStm _ | TAst.IfThenElseStm _ | TAst.WhileStm _ | TAst.ForStm _ | TAst.ContinueStm | TAst.BreakStm | TAst.CompoundStm _ ->
-        Env.insert_error env Errors.NoReturn
-    end in
-  let tprog = [TAst.FuncDecl {name = TAst.ident_of_string "main"; fun_tp = TAst.FunTyp{ret = TAst.Int; params = []}; body = typed_stms}] in
-  tprog, Env.(env.errors) *)
