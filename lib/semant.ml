@@ -11,6 +11,7 @@ let typecheck_typ = function
 | Ast.Int _ -> TAst.Int
 | Ast.Bool _ -> TAst.Bool
 | Ast.Void _ -> TAst.Void
+| _ -> raise Unimplemented
 
 let typecheck_binop = function
 | Ast.Plus _ -> TAst.Plus
@@ -50,6 +51,11 @@ let rec infertype_expr env expr =
   match expr with
   | Ast.Integer {int; loc} -> (TAst.Integer {int}, TAst.Int, loc)
   | Ast.Boolean {bool; loc} -> (TAst.Boolean {bool}, TAst.Bool, loc)
+  | Ast.Nil {loc} -> raise Unimplemented
+  | Ast.String {str; loc} -> raise Unimplemented
+  | Ast.ArrayInitialization {tp; length_expr; loc} -> raise Unimplemented
+  | Ast.RecordInitialization {rec_tp; fields; loc} -> raise Unimplemented
+  | Ast.LengthOf {ident; loc} -> raise Unimplemented
   | Ast.BinOp {left; op; right; loc} -> infertype_binop env left op right loc
   | Ast.UnOp {op; operand; loc} -> infertype_unop env op operand loc
   | Ast.Lval lvl -> infertype_lval env lvl
@@ -98,7 +104,7 @@ and infertype_lval env lvl =
   match lvl with 
   | Ast.Var Ast.Ident {name; loc} -> 
     let lvl_typ = Env.lookup_var_fun env (Sym.symbol name) in
-    match lvl_typ with
+    begin match lvl_typ with
     | None ->
       let _ = Env.insert_error env (Errors.LValueNotFound {loc = loc; sym = Sym.symbol name}) in
       (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType, loc)
@@ -107,6 +113,9 @@ and infertype_lval env lvl =
     | Some Env.FunTyp _ ->
       let _ = Env.insert_error env (Errors.LValueInvalid {loc = loc; sym = Sym.symbol name}) in
       (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType, loc)
+    end
+  | Ast.Idx _ -> raise Unimplemented
+  | Ast.Fld _ -> raise Unimplemented
 and infertype_call env fname args loc =
   match fname with Ast.Ident {name; loc = fname_loc} ->
     let fun_sym = Sym.symbol name in
@@ -133,6 +142,7 @@ and infertype_comma env left right loc =
   let left_texpr, _, _ = infertype_expr env left in
   let right_texpr, right_tp, _ = infertype_expr env right in
   TAst.Comma {left = left_texpr; right = right_texpr; tp = right_tp}, right_tp, loc
+and infertype_record_field_init = raise Unimplemented
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp , loc = infertype_expr env expr in
