@@ -55,7 +55,7 @@ let rec infertype_expr env expr =
   | Ast.Integer {int; loc} -> (TAst.Integer {int}, TAst.Int, loc)
   | Ast.Boolean {bool; loc} -> (TAst.Boolean {bool}, TAst.Bool, loc)
   | Ast.Nil {loc} -> raise Unimplemented
-  | Ast.String {str; loc} -> raise Unimplemented
+  | Ast.String {str; loc} -> (TAst.String {str}, TAst.Str, loc)
   | Ast.ArrayInitialization {tp; length_expr; loc} -> raise Unimplemented
   | Ast.RecordInitialization {rec_tp; fields; loc} -> raise Unimplemented
   | Ast.LengthOf {ident; loc} -> raise Unimplemented

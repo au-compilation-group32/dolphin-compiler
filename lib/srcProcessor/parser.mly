@@ -63,6 +63,8 @@ tp:
 | INT {Ast.Int {loc = {start_pos = $startpos; end_pos = $endpos}}}
 | BOOL {Ast.Bool {loc = {start_pos = $startpos; end_pos = $endpos}}}
 | VOID {Ast.Void {loc = {start_pos = $startpos; end_pos = $endpos}}}
+| BYTE {Ast.Byte {loc = {start_pos = $startpos; end_pos = $endpos}}}
+| STRING {Ast.Str {loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 %inline binop:
 | PLUS {Ast.Plus{loc = {start_pos = $startpos; end_pos = $endpos}}}
@@ -92,6 +94,7 @@ exp:
 | i = INT_LIT {Ast.Integer {int = i; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | TRUE {Ast.Boolean {bool = true; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | FALSE {Ast.Boolean {bool = false; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| s = STRING_LIT {Ast.String {str = s; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = exp o = binop r = exp {Ast.BinOp{left = l; op = o; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | o = unop ex = exp {Ast.UnOp{op = o; operand = ex; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = lval {Ast.Lval l}
