@@ -27,6 +27,11 @@ let typ_to_tree tp =
   | Bool _ -> make_typ_line "Bool"
   | Int _ -> make_typ_line "Int"
   | Void _ -> make_typ_line "Void"
+  | Byte _ -> make_typ_line "Byte"
+  | Str _ -> make_typ_line "Str"
+  (*TODO: fix this array name*)
+  | Array {typ; _} -> make_typ_line "Array"
+  | Record {recordname = RecordName {name; _}; _} -> make_typ_line name
 
 let binop_to_tree op =
     match op with
@@ -53,6 +58,7 @@ let unop_to_tree op =
     match e with
     | Integer {int; _} -> PBox.hlist ~bars:false [make_info_node_line "IntLit("; PBox.line (Int64.to_string int); make_info_node_line ")"]
     | Boolean {bool; _} -> PBox.hlist ~bars:false [make_info_node_line "BooleanLit("; make_keyword_line (if bool then "true" else "false"); make_info_node_line ")"]
+    | String {str; _} -> PBox.hlist ~bars:false [make_info_node_line "StringLit("; PBox.line (str); make_info_node_line ")"]
     | BinOp {left; op; right; _} -> PBox.tree (make_info_node_line "BinOp") [expr_to_tree left; binop_to_tree op; expr_to_tree right]
     | UnOp {op; operand; _} -> PBox.tree (make_info_node_line "UnOp") [unop_to_tree op; expr_to_tree operand]
     | Lval l -> PBox.tree (make_info_node_line "Lval") [lval_to_tree l]

@@ -18,12 +18,16 @@ type environment = {idents : identType Sym.Table.t;
 
 let add_fun_to_env env (fsym, ftp) = Sym.Table.add fsym (FunTyp ftp) env
 
+let add_stdlib_fun_to_env env fs =
+  let TAst.FuncSig {name = TAst.Ident {sym}; fun_tp} = fs in
+  Sym.Table.add sym (FunTyp fun_tp) env
+
 (* create an initial environment with the given functions defined *)
 let make_env library_functions =
   let emp = Sym.Table.empty in
   let env =
     List.fold_left 
-      add_fun_to_env
+      add_stdlib_fun_to_env
       emp 
       library_functions
   in {idents = env; errors = ref []; is_inside_loop = false; expected_ret_tp = TAst.Void; has_all_paths_returned = false}

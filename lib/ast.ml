@@ -12,7 +12,7 @@ type typ =
 | Byte of {loc : Loc.location}
 | Str of {loc : Loc.location}
 | Array of {typ : typ; loc : Loc.location}
-| Record of {recordname : recordname}
+| Record of {recordname : recordname; loc : Loc.location}
 
 type binop =
 | Plus of {loc : Loc.location}
@@ -78,6 +78,8 @@ type function_body = FuncBody of {stms : statement list; loc : Loc.location}
 
 type function_declaration = FuncDecl of {name : ident; ret_tp : typ; params : param list; body : function_body; loc : Loc.location}
 
+type function_signature = FuncSig of {name : ident; ret_tp : typ; params : param list; loc : Loc.location}
+
 type record_field = RecordField of {fieldname: fieldname; typ: typ; loc: Loc.location}
 
 type record_declaration = RecDecl of {rec_name: recordname; fields: record_field list; loc : Loc.location}
@@ -87,3 +89,4 @@ type toplevel_declaration =
 | FunctionDeclaration of function_declaration
 
 type program = toplevel_declaration list
+type header = function_signature list

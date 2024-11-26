@@ -16,7 +16,7 @@ let rec typecheck_typ = function
 | Ast.Byte _ -> TAst.Byte
 | Ast.Str _ -> TAst.Str
 | Ast.Array {typ; _} -> TAst.Array {typ = typecheck_typ typ}
-| Ast.Record {recordname; _} -> raise Unimplemented
+| Ast.Record {recordname = Ast.RecordName {name; _}; _} -> TAst.Record {recordname = TAst.RecordName {sym = Sym.symbol name}}
 
 let typecheck_binop = function
 | Ast.Plus _ -> TAst.Plus
@@ -389,8 +389,17 @@ let check_main_func env =
       else()
     | Env.VarTyp _ -> raise UnreachableControlFlow
 
+let typecheck_library_func_param (Ast.Param {paramname = Ast.Ident {name}; typ}) =
+  let typed_paramname = TAst.Ident {sym = Sym.symbol name} in
+  TAst.Param {paramname = typed_paramname; typ = typecheck_typ typ}
+let infertype_library_func_sig (Ast.FuncSig {name = Ast.Ident {name}; ret_tp; params; _}) =
+  let typed_params = List.map (typecheck_library_func_param) params in
+  let ftp = TAst.FunTyp {ret = typecheck_typ ret_tp; params = typed_params} in
+  TAst.FuncSig {name = TAst.ident_of_string name; fun_tp = ftp}
+
 let typecheck_prog prog =
-  let library_env = Env.make_env DlpStdLib.library_functions in
+  let library_header = List.map infertype_library_func_sig DlpStdLib.library_functions in
+  let library_env = Env.make_env library_header in
   (* Run first pass to add all the declared functions, in case of recursive call*)
   let env = add_toplevel_decl_to_env library_env prog in
   let _ = check_main_func env in

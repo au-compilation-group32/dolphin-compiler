@@ -1,2 +1,24 @@
 int read_integer();
 void print_integer(i: int);
+void exit(code : int);
+stream get_stdout();
+stream get_stderr();
+stream get_stdin();
+bool flush_file(srm : stream); // returns false when errors encountered
+void output_string(str : string, srm : stream);
+void output_bytes_array(bta : [byte], srm : stream);
+[byte] input_bytes_array(len : int, srm : stream);
+bool output_byte(b : byte, srm : stream); // returns false when errors encountered
+int input_byte(s: stream); // returns a byte as a signed integer
+int string_to_int(str : string);
+string int_to_string(i : int);
+string substring(str : string, start : int, len : int);
+string string_concat(str1 : string, str2 : string);
+string ascii_chr(c : int);
+int ascii_ord(s: string);
+byte int_to_byte_signed(i : int);
+byte int_to_byte_unsigned(i : int);
+int byte_to_int_signed(b : byte);
+int byte_to_int_unsigned(b : byte);
+[byte] string_to_bytes_array(str : string);
+string bytes_array_to_string(bts : [byte]);

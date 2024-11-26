@@ -39,6 +39,7 @@
 %}
 
 %start <Ast.program> prog
+%start <Ast.header> header
 // %nonassoc LPAREN RPAREN
 %nonassoc COMMA
 %left LOR
@@ -65,6 +66,8 @@ tp:
 | VOID {Ast.Void {loc = {start_pos = $startpos; end_pos = $endpos}}}
 | BYTE {Ast.Byte {loc = {start_pos = $startpos; end_pos = $endpos}}}
 | STRING {Ast.Str {loc = {start_pos = $startpos; end_pos = $endpos}}}
+| LBRACKET t = tp RBRACKET {Ast.Array {typ = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| i = rec_name {Ast.Record {recordname = i; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 %inline binop:
 | PLUS {Ast.Plus{loc = {start_pos = $startpos; end_pos = $endpos}}}
@@ -156,6 +159,11 @@ func_decl:
     Ast.FuncDecl{name = i; ret_tp = t; params = pl; body = fb; loc = {start_pos = $startpos; end_pos = $endpos}}
   }
 
+func_sig:
+  t = tp i = id LPAREN pl = separated_list(COMMA, func_param) RPAREN SEMICOLON {
+    Ast.FuncSig{name = i; ret_tp = t; params = pl; loc = {start_pos = $startpos; end_pos = $endpos}}
+  }
+
 rec_field:
   name = field_name COLON t = tp {Ast.RecordField {fieldname = name; typ = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
@@ -170,3 +178,6 @@ toplevel_decl:
 
 prog:
   fl = list(toplevel_decl) EOF {fl}
+
+header:
+  fs = list(func_sig) EOF {fs}

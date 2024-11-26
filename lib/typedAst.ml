@@ -2,8 +2,8 @@
 module Sym = Symbol
 
 type ident = Ident of {sym : Sym.symbol}
-type recordname = RecordName of {sym : string}
-type fieldname = FieldName of {sym : string}
+type recordname = RecordName of {sym : Sym.symbol}
+type fieldname = FieldName of {sym : Sym.symbol}
 
 let ident_of_string name = Ident {sym = Sym.symbol name}
 
@@ -70,6 +70,7 @@ type param = Param of {paramname: ident; typ : typ}
 type funtype = FunTyp of {ret : typ; params : param list}
 
 type function_declaration = FuncDecl of {name : ident; fun_tp : funtype; body : statement list}
+type function_signature = FuncSig of {name : ident; fun_tp : funtype;}
 
 type record_field = RecordField of {fieldname: fieldname; typ: typ}
 

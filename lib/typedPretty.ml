@@ -17,6 +17,9 @@ let typ_to_tree tp =
   | Int -> Pretty.make_typ_line "Int"
   | Bool -> Pretty.make_typ_line "Bool"
   | ErrorType -> PBox.line_with_style (PBox.Style.set_bg_color PBox.Style.Red PBox.Style.default) "ErrorType"
+  (*TODO: fix this array name*)
+  | Array {typ;} -> Pretty.make_typ_line "Array"
+  | Record {recordname = RecordName {sym; _}; _} -> Pretty.make_typ_line (Sym.name sym)
 
 let binop_to_tree op =
   match op with
@@ -43,6 +46,7 @@ let rec expr_to_tree e =
   match e with
   | Integer {int; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "IntLit("; PBox.line (Int64.to_string int); Pretty.make_info_node_line ")"]
   | Boolean {bool; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "BooleanLit("; Pretty.make_keyword_line (if bool then "true" else "false"); Pretty.make_info_node_line ")"]
+  | String {str; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "StringLit("; PBox.line (str); Pretty.make_info_node_line ")"]
   | BinOp {left; op; right; tp; _} -> PBox.tree (Pretty.make_info_node_line "BinOp") [typ_to_tree tp; expr_to_tree left; binop_to_tree op; expr_to_tree right]
   | UnOp {op; operand; tp; _} -> PBox.tree (Pretty.make_info_node_line "UnOp") [typ_to_tree tp; unop_to_tree op; expr_to_tree operand]
   | Lval l -> PBox.tree (Pretty.make_info_node_line "Lval") [lval_to_tree l]

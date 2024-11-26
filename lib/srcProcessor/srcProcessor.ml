@@ -44,3 +44,8 @@ let src_file_to_ast file_name =
     let loc = Location.{start_pos = (Lexing.lexeme_start_p buffer); end_pos = (Lexing.lexeme_end_p buffer)} in
     let c = Lexing.lexeme_char buffer 0 in
     LexFailure (Errors.ParserSyntaxError{loc = loc; c = c})
+
+let header_file_to_ast file_name = 
+  let file = open_in file_name in
+  let buffer = Lexing.from_channel file in
+  Parser.header Lexer.token buffer
