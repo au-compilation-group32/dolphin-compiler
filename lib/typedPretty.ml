@@ -10,6 +10,8 @@ let typ_to_string = function
 
 (* producing trees for pretty printing *)
 let ident_to_tree (Ident {sym}) = Pretty.make_ident_line (Sym.name sym)
+let fieldname_to_tree (FieldName {sym}) = Pretty.make_ident_line (Sym.name sym)
+let recordname_to_tree (RecordName {sym}) = Pretty.make_ident_line (Sym.name sym)
 
 let typ_to_tree tp =
   match tp with
@@ -120,5 +122,20 @@ let func_decl_to_tree fd =
     PBox.hlist ~bars:false [Pretty.make_info_node_line "Type: "; func_type_to_tree fun_tp];
     PBox.hlist ~bars:false [PBox.tree (Pretty.make_info_node_line "Body: ") (statement_seq_to_forest body)]]
 
+let rec_field_to_tree (TypedAst.RecordField{fieldname; typ; _}) =
+  PBox.tree (Pretty.make_keyword_line "Field") 
+    [PBox.hlist ~bars:false [Pretty.make_info_node_line "FieldName: "; fieldname_to_tree fieldname]; 
+    PBox.hlist ~bars:false [Pretty.make_info_node_line "Type: "; typ_to_tree typ]]
+
+let rec_decl_to_tree rd = 
+  let TypedAst.RecDecl {rec_name; fields;} = rd in
+  PBox.tree (Pretty.make_keyword_line "RecDecl") 
+    [PBox.hlist ~bars:false [Pretty.make_info_node_line "RecName: "; recordname_to_tree rec_name]; 
+    PBox.hlist ~bars:false [PBox.tree (Pretty.make_info_node_line "RecFields: ") (List.map rec_field_to_tree fields)]]
+
+let toplevel_decl_to_tree = function
+| TypedAst.RecordDeclaration rd -> rec_decl_to_tree rd
+| TypedAst.FunctionDeclaration fd -> func_decl_to_tree fd
+
 let program_to_tree prog = 
-  PBox.tree (Pretty.make_info_node_line "Program") (List.map func_decl_to_tree prog)
+  PBox.tree (Pretty.make_info_node_line "Program") (List.map toplevel_decl_to_tree prog)

@@ -39,7 +39,7 @@ type expr =
 | Nil of {loc: Loc.location}
 | String of {str: string; loc : Loc.location}
 | ArrayInitialization of {tp: typ; length_expr: expr; loc: Loc.location}
-| RecordInitialization of {rec_tp: typ; fields: record_field_init list; loc: Loc.location}
+| RecordInitialization of {rec_name: recordname; fields: record_field_init list; loc: Loc.location}
 | LengthOf of {ident: ident; loc: Loc.location}
 | BinOp of {left : expr; op : binop; right : expr; loc : Loc.location}
 | UnOp of {op : unop; operand : expr; loc : Loc.location}
@@ -51,7 +51,7 @@ and lval =
 | Var of ident
 | Idx of {arr: expr; index: expr; loc: Loc.location}
 | Fld of {record: expr; field: fieldname; loc: Loc.location}
-and record_field_init = RecordFieldInit of {recordname: recordname; expr: expr; loc: Loc.location}
+and record_field_init = RecordFieldInit of {fieldname: fieldname; rhs: expr; loc: Loc.location}
 
 type single_declaration = Declaration of {name : ident; tp : typ option; body : expr; loc : Loc.location}
 

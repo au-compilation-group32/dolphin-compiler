@@ -19,3 +19,8 @@ let reserved_record_names =
     TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "accepted_connection"}; fields = []};
     TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "udp_recvfrom_result"}; fields = []}; *)
   ]
+
+let library_records =
+  [
+    TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "stream"}; fields = []};
+  ]

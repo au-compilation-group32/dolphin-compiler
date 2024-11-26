@@ -28,8 +28,8 @@ type expr =
 | Boolean of {bool : bool}
 | Nil
 | String of {str: string}
-| ArrayInitialization of {tp: typ; length_expr: expr}
-| RecordInitialization of {rec_tp: typ; fields: record_field_init list}
+| ArrayInitialization of {length_expr: expr; tp: typ}
+| RecordInitialization of {rec_name: recordname; fields: record_field_init list; tp: typ}
 | LengthOf of {ident: ident}
 | BinOp of {left : expr; op : binop; right : expr; tp : typ}
 | UnOp of {op : unop; operand : expr; tp : typ}
@@ -41,7 +41,7 @@ and lval =
 | Var of {ident : ident; tp : typ}
 | Idx of {arr: expr; index: expr}
 | Fld of {record: expr; field: fieldname}
-and record_field_init = RecordFieldInit of {recordname: recordname; expr: expr}
+and record_field_init = RecordFieldInit of {fieldname: fieldname; rhs: expr; tp: typ}
 
 type single_declaration = Declaration of {name : ident; tp : typ; body : expr}
 

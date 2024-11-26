@@ -49,6 +49,7 @@
 %right ASSIGN
 %left PLUS MINUS
 %left MUL DIV REM
+%left DOT
 %%
 
 id:
@@ -88,9 +89,8 @@ tp:
 | MINUS {Ast.Neg{loc = {start_pos = $startpos; end_pos = $endpos}}}
 | LNOT {Ast.Lnot{loc = {start_pos = $startpos; end_pos = $endpos}}}
 
-// exp_list:
-// {[]}
-// | e = exp COMMA el = exp_list {e::el}
+rec_field_init:
+  fn = field_name ASSIGN e = exp SEMICOLON {Ast.RecordFieldInit {fieldname = fn; rhs = e; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 exp:
 | LPAREN e = exp RPAREN {e}
@@ -98,6 +98,7 @@ exp:
 | TRUE {Ast.Boolean {bool = true; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | FALSE {Ast.Boolean {bool = false; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | s = STRING_LIT {Ast.String {str = s; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| NEW rn = rec_name LBRACE fi_list = list(rec_field_init) RBRACE {Ast.RecordInitialization {rec_name = rn; fields = fi_list; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = exp o = binop r = exp {Ast.BinOp{left = l; op = o; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | o = unop ex = exp {Ast.UnOp{op = o; operand = ex; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = lval {Ast.Lval l}
@@ -115,6 +116,7 @@ exp_or_comma_exp:
 
 lval:
 | i = IDENT {Ast.Var (Ast.Ident {name = i; loc = {start_pos = $startpos; end_pos = $endpos}})}
+| e = exp DOT f = field_name {Ast.Fld {record = e; field = f; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 single_decl:
 | i = id ASSIGN e = exp {Ast.Declaration {name = i; tp = None; body = e; loc = {start_pos = $startpos; end_pos = $endpos}}}
@@ -165,10 +167,10 @@ func_sig:
   }
 
 rec_field:
-  name = field_name COLON t = tp {Ast.RecordField {fieldname = name; typ = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
+  name = field_name COLON t = tp SEMICOLON {Ast.RecordField {fieldname = name; typ = t; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 rec_decl:
-  RECORD name = rec_name LBRACE fl = separated_list(SEMICOLON, rec_field) RBRACE {
+  RECORD name = rec_name LBRACE fl = list(rec_field) RBRACE {
     Ast.RecDecl {rec_name = name; fields = fl; loc = {start_pos = $startpos; end_pos = $endpos}}
   }
 

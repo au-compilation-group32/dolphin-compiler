@@ -329,7 +329,9 @@ and codegen_statement_seq env stms =
   in
   List.fold_left merge ([], env) stms
 
+(*TODO: implement this*)
 let codegen_field (TAst.RecordField {typ; _}) = ll_type_of typ
+(*TODO: implement this*)
 let codegen_rec_decl rd =
   let TAst.RecDecl {rec_name = TAst.RecordName {sym}; fields} =rd in
   let ll_fields = List.map codegen_field fields in
@@ -375,7 +377,7 @@ let codegen_func_decl env fd =
   let ll_fdecl = Ll.{fty = ll_ftyp; param = params_uids; cfg = cfg} in
   let renamed_fname_sym = if Sym.name fname_sym = "main" then Sym.symbol "dolphin_fun_main" else fname_sym in
   let Env.{str_lits; _} = final_env in
-  (renamed_fname_sym, ll_fdecl, str_lits)
+  (renamed_fname_sym, ll_fdecl)
 
 let codegen_func_sig fs = 
   let (TAst.FuncSig {name = TAst.Ident {sym}; fun_tp = TAst.FunTyp {ret; params}}) = fs in
@@ -392,16 +394,29 @@ let str_lit_to_gdecl (s, sym) =
   let gd = (ll_str_of_length len, Ll.GStruct [(Ll.I64, Ll.GInt len); (ll_str_type, Ll.GString s)]) in
   (sym, gd)
 
-let codegen_prog prg =
+let filter_rec_decl tprog =
+  List.filter_map (
+    function
+      | TAst.RecordDeclaration rd -> Some rd
+      | _ -> None
+  ) tprog
+
+let filter_func_decl tprog =
+  List.filter_map (
+    function
+      | TAst.FunctionDeclaration fd -> Some fd
+      | _ -> None
+  ) tprog
+
+let codegen_prog tprog =
   let open Sym in
   let open Ll in
   let env = Env.make_empty_env in
-  let tprog = List.map (codegen_func_decl env) prg in
-  let fdecls = List.fold_left (fun acc (x, y, _z) -> (x, y) :: acc) [] tprog in
-  (* let str_lits = List.fold_left (fun acc (_x, _y, z) -> !z @ acc) [] tprog in *)
-  let (_, _, str_lits) = List.hd tprog in
+  let rdecls = List.map (codegen_rec_decl ) (filter_rec_decl tprog) in
+  let fdecls = List.map (codegen_func_decl env) (filter_func_decl tprog) in
+  let str_lits = env.str_lits in
   let gdecls = List.map str_lit_to_gdecl !str_lits in
-  { tdecls    = DlpStdLib.reserved_record_names
+  { tdecls    = DlpStdLib.reserved_record_names @ rdecls
   ; extgdecls = []
   ; gdecls    = gdecls
   ; extfuns   = codegen_external_decl

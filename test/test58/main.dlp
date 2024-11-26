@@ -5,6 +5,11 @@ void print_string(s: string) {
   output_string (s, get_stdout());
 }
 
+record animal {
+  name: string;
+  legs: int;
+}
+
 int main () {
   var x = "Hello World\n";
   print_string(x);

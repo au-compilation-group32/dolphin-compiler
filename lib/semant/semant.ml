@@ -61,7 +61,7 @@ let rec infertype_expr env expr =
   | Ast.Nil {loc} -> raise Unimplemented
   | Ast.String {str; loc} -> (TAst.String {str}, TAst.Str, loc)
   | Ast.ArrayInitialization {tp; length_expr; loc} -> raise Unimplemented
-  | Ast.RecordInitialization {rec_tp; fields; loc} -> raise Unimplemented
+  | Ast.RecordInitialization {rec_name; fields; loc} -> raise Unimplemented
   | Ast.LengthOf {ident; loc} -> raise Unimplemented
   | Ast.BinOp {left; op; right; loc} -> infertype_binop env left op right loc
   | Ast.UnOp {op; operand; loc} -> infertype_unop env op operand loc
@@ -324,12 +324,18 @@ let infertype_param ~reportError env p =
 
 let infertype_param_list ~reportError env params = List.map (infertype_param ~reportError:reportError env) params
 
-let rec add_toplevel_decl_to_env env td_list =
+(*First pass, add dummy rec_decl and func_decl to deal with recursion*)
+let rec first_pass_add_toplevel_decl_to_env env td_list =
   let Env.{idents; _} = env in
   match td_list with
   | [] -> env
   | h::t -> match h with
-    | Ast.RecordDeclaration rd -> raise Unimplemented
+    | Ast.RecordDeclaration rd ->
+      (*TODO: implement error checks*)
+      let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields; loc} = rd in
+      let sym = Sym.symbol name in
+      let new_env = Env.add_rec_to_env env (sym, []) in
+      first_pass_add_toplevel_decl_to_env new_env t
     | Ast.FunctionDeclaration fd -> 
       let Ast.FuncDecl{name = Ident{name; loc = fname_loc}; ret_tp; params; body = _; loc = _} = fd in
       let sym = Sym.symbol name in
@@ -337,11 +343,38 @@ let rec add_toplevel_decl_to_env env td_list =
       let typed_params = infertype_param_list ~reportError:true env params in
       let fun_typ = TAst.FunTyp{ret = typed_ret_tp; params = typed_params} in
       let _ = 
+        (*TODO: refactor using Env.lookup_var_fun*)
         if Sym.Table.mem sym idents
         then Env.insert_error env (Errors.FunctionDuplicateDeclaration{loc = fname_loc; sym = sym})
         else () in
-      let new_env = Env.{env with idents = Env.add_fun_to_env idents (sym, fun_typ)} in
-      add_toplevel_decl_to_env new_env t
+      let new_env = Env.add_fun_to_env env (sym, fun_typ) in
+      first_pass_add_toplevel_decl_to_env new_env t
+
+let typecheck_field f =
+  (*TODO: implement error checks*)
+  let Ast.RecordField {fieldname = Ast.FieldName{name; _}; typ; _} = f in
+  let sym = Sym.symbol name in
+  TAst.RecordField {fieldname = TAst.FieldName{sym = sym}; typ = typecheck_typ typ}
+
+let typecheck_rec_decl env rd =
+  (*TODO: implement error checks*)
+  let Ast.RecDecl {rec_name = Ast.RecordName {name}; fields; loc} = rd in
+  let typed_name = TAst.RecordName {sym = Sym.symbol name} in
+  let typed_fields = List.map typecheck_field fields in
+  TAst.RecDecl {rec_name = typed_name; fields = typed_fields}
+
+let rec second_pass_add_toplevel_decl_to_env env td_list =
+  match td_list with
+  | [] -> env
+  | h::t -> match h with
+    | Ast.RecordDeclaration rd ->
+      (*TODO: implement error checks*)
+      let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields; loc} = rd in
+      let sym = Sym.symbol name in
+      let typed_fields = List.map typecheck_field fields in
+      let new_env = Env.add_rec_to_env env (sym, typed_fields) in
+      second_pass_add_toplevel_decl_to_env new_env t
+    | Ast.FunctionDeclaration _ -> env
 
 let insert_param_to_env env param =
   let TAst.Param {paramname = TAst.Ident {sym}; typ} = param in
@@ -373,11 +406,9 @@ let typecheck_func_decl env fd =
     else () in
   TAst.FuncDecl{name = TAst.Ident {sym = func_name_sym}; fun_tp = decl_fun_tp; body = typed_stms}
 
-let typecheck_rec_decl env rd = raise Unimplemented
-
 let typecheck_toplevel_decl env td = match td with
-| Ast.RecordDeclaration rd -> typecheck_rec_decl env rd
-| Ast.FunctionDeclaration fd -> typecheck_func_decl env fd
+| Ast.RecordDeclaration rd -> TAst.RecordDeclaration (typecheck_rec_decl env rd)
+| Ast.FunctionDeclaration fd -> TAst.FunctionDeclaration (typecheck_func_decl env fd)
 
 let check_main_func env =
   match Env.lookup_var_fun env (Sym.symbol "main") with
@@ -397,13 +428,15 @@ let infertype_library_func_sig (Ast.FuncSig {name = Ast.Ident {name}; ret_tp; pa
   let ftp = TAst.FunTyp {ret = typecheck_typ ret_tp; params = typed_params} in
   TAst.FuncSig {name = TAst.ident_of_string name; fun_tp = ftp}
 
+let library_records = DlpStdLib.library_records
 let library_header = List.map infertype_library_func_sig DlpStdLib.library_functions
 
 let typecheck_prog prog =
-  let library_env = Env.make_env library_header in
+  let library_env = Env.make_env library_records library_header in
   (* Run first pass to add all the declared functions, in case of recursive call*)
-  let env = add_toplevel_decl_to_env library_env prog in
-  let _ = check_main_func env in
-  (* Run second pass for semantic analysis*)
-  let tprog = List.map (typecheck_toplevel_decl env) prog in
-  tprog, Env.(env.errors)
+  let env = first_pass_add_toplevel_decl_to_env library_env prog in
+  let env2 = second_pass_add_toplevel_decl_to_env env prog in
+  let _ = check_main_func env2 in
+  (* Run third pass for semantic analysis*)
+  let tprog = List.map (typecheck_toplevel_decl env2) prog in
+  tprog, Env.(env2.errors)
