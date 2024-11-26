@@ -51,6 +51,10 @@ let rec expr_to_tree e =
   | Integer {int; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "IntLit("; PBox.line (Int64.to_string int); Pretty.make_info_node_line ")"]
   | Boolean {bool; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "BooleanLit("; Pretty.make_keyword_line (if bool then "true" else "false"); Pretty.make_info_node_line ")"]
   | String {str; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "StringLit("; PBox.line (str); Pretty.make_info_node_line ")"]
+  | RecordInitialization {rec_name; fields; _} ->
+    PBox.tree (Pretty.make_info_node_line "RecordInit")
+      [PBox.hlist ~bars:false [Pretty.make_info_node_line "RecName: "; recordname_to_tree rec_name];
+        PBox.tree (Pretty.make_info_node_line "Fields") (List.map (fun fi -> record_field_init_to_tree fi) fields)]
   | BinOp {left; op; right; tp; _} -> PBox.tree (Pretty.make_info_node_line "BinOp") [typ_to_tree tp; expr_to_tree left; binop_to_tree op; expr_to_tree right]
   | UnOp {op; operand; tp; _} -> PBox.tree (Pretty.make_info_node_line "UnOp") [typ_to_tree tp; unop_to_tree op; expr_to_tree operand]
   | Lval l -> PBox.tree (Pretty.make_info_node_line "Lval") [lval_to_tree l]
@@ -64,6 +68,8 @@ let rec expr_to_tree e =
 and lval_to_tree l =
   match l with
   | Var {ident; tp} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "Var("; ident_to_tree ident; Pretty.make_info_node_line ")"; PBox.line " : "; typ_to_tree tp;]
+and record_field_init_to_tree (TypedAst.RecordFieldInit {fieldname; rhs; _}) =
+  PBox.tree (Pretty.make_info_node_line "Field") [fieldname_to_tree fieldname; expr_to_tree rhs]
 
 let single_declaration_to_tree (Declaration {name; tp; body; _}) =
   PBox.tree (Pretty.make_keyword_line "Declaration") 

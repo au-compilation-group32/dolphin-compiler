@@ -54,23 +54,29 @@ let unop_to_tree op =
   | Neg _ -> make_keyword_line "Neg"
   | Lnot _ -> make_keyword_line "Lnot"
   
-  let rec expr_to_tree e =
-    match e with
-    | Integer {int; _} -> PBox.hlist ~bars:false [make_info_node_line "IntLit("; PBox.line (Int64.to_string int); make_info_node_line ")"]
-    | Boolean {bool; _} -> PBox.hlist ~bars:false [make_info_node_line "BooleanLit("; make_keyword_line (if bool then "true" else "false"); make_info_node_line ")"]
-    | String {str; _} -> PBox.hlist ~bars:false [make_info_node_line "StringLit("; PBox.line (str); make_info_node_line ")"]
-    | BinOp {left; op; right; _} -> PBox.tree (make_info_node_line "BinOp") [expr_to_tree left; binop_to_tree op; expr_to_tree right]
-    | UnOp {op; operand; _} -> PBox.tree (make_info_node_line "UnOp") [unop_to_tree op; expr_to_tree operand]
-    | Lval l -> PBox.tree (make_info_node_line "Lval") [lval_to_tree l]
-    | Assignment {lvl; rhs; _} -> PBox.tree (make_info_node_line "Assignment") [lval_to_tree lvl; expr_to_tree rhs]
-    | Call {fname; args; _} ->
-      PBox.tree (make_info_node_line "Call")
-        [PBox.hlist ~bars:false [make_info_node_line "FunName: "; ident_to_tree fname];
-         PBox.tree (make_info_node_line "Args") (List.map (fun e -> expr_to_tree e) args)]
-    | Comma {left; right; _} -> PBox.tree (make_info_node_line "Comma") [expr_to_tree left; expr_to_tree right]
-  and lval_to_tree l =
-    match l with
-    | Var ident -> PBox.hlist ~bars:false [make_info_node_line "Var("; ident_to_tree ident; make_info_node_line ")"]
+let rec expr_to_tree e =
+  match e with
+  | Integer {int; _} -> PBox.hlist ~bars:false [make_info_node_line "IntLit("; PBox.line (Int64.to_string int); make_info_node_line ")"]
+  | Boolean {bool; _} -> PBox.hlist ~bars:false [make_info_node_line "BooleanLit("; make_keyword_line (if bool then "true" else "false"); make_info_node_line ")"]
+  | String {str; _} -> PBox.hlist ~bars:false [make_info_node_line "StringLit("; PBox.line (str); make_info_node_line ")"]
+  | RecordInitialization {rec_name; fields; _} ->
+    PBox.tree (make_info_node_line "RecordInit")
+      [PBox.hlist ~bars:false [make_info_node_line "RecName: "; recordname_to_tree rec_name];
+        PBox.tree (make_info_node_line "Fields") (List.map (fun fi -> record_field_init_to_tree fi) fields)]
+  | BinOp {left; op; right; _} -> PBox.tree (make_info_node_line "BinOp") [expr_to_tree left; binop_to_tree op; expr_to_tree right]
+  | UnOp {op; operand; _} -> PBox.tree (make_info_node_line "UnOp") [unop_to_tree op; expr_to_tree operand]
+  | Lval l -> PBox.tree (make_info_node_line "Lval") [lval_to_tree l]
+  | Assignment {lvl; rhs; _} -> PBox.tree (make_info_node_line "Assignment") [lval_to_tree lvl; expr_to_tree rhs]
+  | Call {fname; args; _} ->
+    PBox.tree (make_info_node_line "Call")
+      [PBox.hlist ~bars:false [make_info_node_line "FunName: "; ident_to_tree fname];
+        PBox.tree (make_info_node_line "Args") (List.map (fun e -> expr_to_tree e) args)]
+  | Comma {left; right; _} -> PBox.tree (make_info_node_line "Comma") [expr_to_tree left; expr_to_tree right]
+and lval_to_tree l =
+  match l with
+  | Var ident -> PBox.hlist ~bars:false [make_info_node_line "Var("; ident_to_tree ident; make_info_node_line ")"]
+and record_field_init_to_tree (Ast.RecordFieldInit {fieldname; rhs; _}) =
+  PBox.tree (make_info_node_line "Field") [fieldname_to_tree fieldname; expr_to_tree rhs]
 
 let single_declaration_to_tree (Declaration {name; tp; body; _}) =
   PBox.tree (make_keyword_line "Declaration") 

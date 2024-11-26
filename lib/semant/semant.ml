@@ -61,7 +61,7 @@ let rec infertype_expr env expr =
   | Ast.Nil {loc} -> raise Unimplemented
   | Ast.String {str; loc} -> (TAst.String {str}, TAst.Str, loc)
   | Ast.ArrayInitialization {tp; length_expr; loc} -> raise Unimplemented
-  | Ast.RecordInitialization {rec_name; fields; loc} -> raise Unimplemented
+  | Ast.RecordInitialization {rec_name; fields; loc} -> infertype_record_initialization env rec_name fields loc
   | Ast.LengthOf {ident; loc} -> raise Unimplemented
   | Ast.BinOp {left; op; right; loc} -> infertype_binop env left op right loc
   | Ast.UnOp {op; operand; loc} -> infertype_unop env op operand loc
@@ -69,6 +69,12 @@ let rec infertype_expr env expr =
   | Ast.Assignment {lvl; rhs; loc} -> infertype_assignment env lvl rhs loc
   | Ast.Call {fname; args; loc} -> infertype_call env fname args loc
   | Ast.Comma {left; right; loc} -> infertype_comma env left right loc
+and infertype_record_initialization env rec_name fields loc =
+  let Ast.RecordName {name} = rec_name in
+  let typed_rec_name = TAst.RecordName {sym = Sym.symbol name} in
+  let typed_fields_init = List.map (infertype_record_field_init env) fields in
+  let tp = TAst.Record {recordname = typed_rec_name} in
+  (TAst.RecordInitialization {rec_name = typed_rec_name; fields = typed_fields_init; tp = tp}, tp, loc)
 and infertype_binop env left op right loc =
     match op with
     | Plus _ | Minus _ | Mul _ | Div _ | Rem _ | Lt _ | Le _ | Gt _ | Ge _ | Lor _ | Land _ -> 
@@ -149,7 +155,12 @@ and infertype_comma env left right loc =
   let left_texpr, _, _ = infertype_expr env left in
   let right_texpr, right_tp, _ = infertype_expr env right in
   TAst.Comma {left = left_texpr; right = right_texpr; tp = right_tp}, right_tp, loc
-and infertype_record_field_init env = raise Unimplemented
+and infertype_record_field_init env field_init =
+  (*TODO: check for error*)
+  let Ast.RecordFieldInit {fieldname = Ast.FieldName {name}; rhs; loc} = field_init in
+  let typed_fieldname = TAst.FieldName {sym = Sym.symbol name} in
+  let typed_rhs, rhs_tp, rhs_loc = infertype_expr env rhs in
+  TAst.RecordFieldInit {fieldname = typed_fieldname; rhs = typed_rhs; tp = rhs_tp}
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp , loc = infertype_expr env expr in
@@ -171,7 +182,7 @@ let typecheck_var_delc env var = match var with
   | Some t -> 
     let decl_tp = typecheck_typ t in
     match decl_tp with
-    | TAst.Int | TAst.Bool ->
+    | TAst.Int | TAst.Bool | TAst.Str | TAst.Record _ ->
       let _ =
         if decl_tp <> body_tp && body_tp <> TAst.ErrorType
         then Env.insert_error env (Errors.TypeMismatch{loc = loc; expected = decl_tp; actual = body_tp})

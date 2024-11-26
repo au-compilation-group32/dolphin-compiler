@@ -5,7 +5,7 @@ void print_string(s: string) {
   output_string (s, get_stdout());
 }
 
-record animal {
+record Animal {
   name: string;
   legs: int;
 }
@@ -13,5 +13,7 @@ record animal {
 int main () {
   var x = "Hello World\n";
   print_string(x);
+  var cat: Animal = new Animal {name = "cat"; legs = 4;};
+  var pussy = new Animal {name = "pussy"; legs = 2;};
   return 0;
 }
