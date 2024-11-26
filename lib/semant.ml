@@ -14,7 +14,11 @@ let rec typecheck_typ = function
 | Ast.Byte _ -> TAst.Byte
 | Ast.Str _ -> TAst.Str
 | Ast.Array {typ; _} -> TAst.Array {typ = typecheck_typ typ}
-| Ast.Record {recordname; _} -> raise Unimplemented
+| Ast.Record {recordname; _} -> 
+  begin 
+  match recordname with Ast.RecordName {name; loc = _} ->
+    TAst.Record {recordname = TAst.RecordName{sym = name}}
+  end
 
 let typecheck_binop = function
 | Ast.Plus _ -> TAst.Plus
@@ -54,11 +58,21 @@ let rec infertype_expr env expr =
   match expr with
   | Ast.Integer {int; loc} -> (TAst.Integer {int}, TAst.Int, loc)
   | Ast.Boolean {bool; loc} -> (TAst.Boolean {bool}, TAst.Bool, loc)
-  | Ast.Nil {loc} -> raise Unimplemented
-  | Ast.String {str; loc} -> raise Unimplemented
-  | Ast.ArrayInitialization {tp; length_expr; loc} -> raise Unimplemented
-  | Ast.RecordInitialization {rec_tp; fields; loc} -> raise Unimplemented
-  | Ast.LengthOf {ident; loc} -> raise Unimplemented
+  | Ast.Nil {loc} -> (TAst.Nil, TAst.Void, loc)
+  | Ast.String {str; loc} -> (TAst.String {str}, TAst.Str, loc)
+  | Ast.ArrayInitialization {tp; length_expr; loc} -> 
+    let len, _, _ = infertype_expr env length_expr in
+    let typeFound = typecheck_typ tp in
+    (TAst.ArrayInitialization {tp = typeFound; length_expr = len}, TAst.Array {typ = typeFound}, loc)
+  | Ast.RecordInitialization {rec_tp; fields; loc} -> 
+    let typeFound = typecheck_typ rec_tp in
+    (TAst.RecordInitialization {rec_tp = typeFound; fields = List.map (infertype_record_field_init env) fields}, typeFound, loc)
+  | Ast.LengthOf {ident; loc} -> 
+    begin
+    match ident with Ast.Ident {name; loc = _} ->
+      let fun_sym = Sym.symbol name in
+      (TAst.LengthOf {ident = TAst.Ident {sym = fun_sym}}, TAst.Int, loc)
+    end
   | Ast.BinOp {left; op; right; loc} -> infertype_binop env left op right loc
   | Ast.UnOp {op; operand; loc} -> infertype_unop env op operand loc
   | Ast.Lval lvl -> infertype_lval env lvl
@@ -145,7 +159,17 @@ and infertype_comma env left right loc =
   let left_texpr, _, _ = infertype_expr env left in
   let right_texpr, right_tp, _ = infertype_expr env right in
   TAst.Comma {left = left_texpr; right = right_texpr; tp = right_tp}, right_tp, loc
-and infertype_record_field_init = raise Unimplemented
+and infertype_record_field_init env field = 
+  begin
+  match field with Ast.RecordFieldInit {recordname = recordname; expr = expr; loc = loc} ->
+    let exprTFound, _, _ = infertype_expr env expr in
+    begin
+    match recordname with Ast.RecordName {name = name; loc = _} ->
+      let recordnameTFound = TAst.RecordName {sym=name} in
+      let recordnameTFound2 : TAst.recordname = recordnameTFound in
+      TAst.RecordFieldInit {recordname = recordnameTFound2; expr = exprTFound}
+    end
+  end
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp , loc = infertype_expr env expr in
