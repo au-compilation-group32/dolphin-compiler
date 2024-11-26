@@ -131,7 +131,21 @@ and infertype_lval env lvl =
       let _ = Env.insert_error env (Errors.LValueInvalid {loc = loc; sym = Sym.symbol name}) in
       (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType, loc)
     end
-  | Ast.Idx _ -> raise Unimplemented
+  | Ast.Idx {arr; index; loc} -> 
+    let exprFound, exprType, _ = infertype_expr env arr in
+    let exprFound2, exprType2, _ = infertype_expr env index in
+    let testArrayInt = TAst.Array{typ=TAst.Int} in
+    let testArrayBool = TAst.Array{typ=TAst.Bool} in
+    let testArrayVoid = TAst.Array{typ=TAst.Void} in
+    let testArrayByte = TAst.Array{typ=TAst.Byte} in
+    let testArrayStr = TAst.Array{typ=TAst.Str} in
+    if exprType <> testArrayInt && exprType <> testArrayBool && exprType <> testArrayVoid && exprType <> testArrayByte && exprType <> testArrayStr && exprType2 <> TAst.Int
+    then let _ = Env.insert_error env (Errors.TypeMismatch {loc = loc; expected = testArrayVoid; actual = exprType}) in 
+    (TAst.Lval (TAst.Idx {arr = exprFound; index = exprFound2}), TAst.ErrorType, loc)
+    else begin
+      match exprType with TAst.Array {typ} ->
+        (TAst.Lval (TAst.Idx {arr = exprFound; index = exprFound2}), typ, loc)
+      end
   | Ast.Fld _ -> raise Unimplemented
 and infertype_call env fname args loc =
   match fname with Ast.Ident {name; loc = fname_loc} ->
