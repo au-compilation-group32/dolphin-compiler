@@ -1,6 +1,11 @@
 // Positive string test
 
+void print_string(s: string) {
+//  output_string (s, get_stdout());
+}
+
 int main () {
-  output_string ("Hello World!", get_stdout());
+  var x = "Hello World\n";
+  print_string(x);
   return 0;
 }

@@ -16,10 +16,12 @@ let typ_to_tree tp =
   | Void -> Pretty.make_typ_line "Void"
   | Int -> Pretty.make_typ_line "Int"
   | Bool -> Pretty.make_typ_line "Bool"
-  | ErrorType -> PBox.line_with_style (PBox.Style.set_bg_color PBox.Style.Red PBox.Style.default) "ErrorType"
+  | Byte -> Pretty.make_typ_line "Byte"
+  | Str -> Pretty.make_typ_line "Str"
   (*TODO: fix this array name*)
   | Array {typ;} -> Pretty.make_typ_line "Array"
   | Record {recordname = RecordName {sym; _}; _} -> Pretty.make_typ_line (Sym.name sym)
+  | ErrorType -> PBox.line_with_style (PBox.Style.set_bg_color PBox.Style.Red PBox.Style.default) "ErrorType"
 
 let binop_to_tree op =
   match op with

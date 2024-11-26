@@ -12,6 +12,7 @@ exception UnexpectedOperator
 let string_of_sym (name, i) = name ^ (string_of_int i)
 
 let ll_array = Ll.Ptr (Ll.Namedt (Sym.symbol "array_type"))
+let ll_str_of_length len = Ll.Struct [Ll.I64; Ll.Array (len, Ll.I8)]
 let ll_type_of = function
   | TAst.Int -> Ll.I64
   | TAst.Bool -> Ll.I1
@@ -19,7 +20,7 @@ let ll_type_of = function
   | TAst.Byte -> Ll.I8
   | TAst.Str -> ll_array
   | TAst.Array _ -> ll_array
-  | TAst.Record {recordname = TAst.RecordName {sym}} -> Ll.Namedt sym
+  | TAst.Record {recordname = TAst.RecordName {sym}} -> Ll.Ptr (Ll.Namedt sym)
   | TAst.ErrorType -> raise UnexpectedErrorType
 
 let tast_type_of = function
@@ -103,7 +104,10 @@ let rec codegen_expr env expr =
   | TAst.Comma {left; right; tp} -> codegen_comma env left right tp
 and codegen_string env str =
   let len = String.length str in
-  raise Unimplemented
+  let _, str_lit_sym , conv_str_lit_packed_sym = Env.insert_str_lit_reg env str in
+  let bitcast = Ll.Bitcast(Ll.Ptr(ll_str_of_length len), Ll.Gid str_lit_sym, ll_array) in
+  let bitcast_insn = CfgBuilder.add_insn(Some conv_str_lit_packed_sym, bitcast)in
+  ([bitcast_insn], ll_array, Ll.Id conv_str_lit_packed_sym)
 and codegen_binop env left op right tp =
   let ll_tp = ll_type_of tp in
   let left_buildlets, left_tp, left_op = codegen_expr env left in
@@ -153,10 +157,10 @@ and codegen_call env fname args tp =
   let get_args_op (_, t, o) = (t, o) in
   let args_ops = List.map get_args_op args_code in
   let ret_op = match tp with
-    | TAst.Int | TAst.Bool -> let _, tmp_alias_sym = Env.insert_tmp_reg env in tmp_alias_sym
+    | TAst.Int | TAst.Bool | TAst.Str | TAst.Record _-> let _, tmp_alias_sym = Env.insert_tmp_reg env in tmp_alias_sym
     | TAst.Void | TAst.ErrorType -> Sym.symbol "dummy"
   in let call_insn = match tp with
-    | TAst.Int | TAst.Bool -> CfgBuilder.add_insn (Some ret_op, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
+    | TAst.Int | TAst.Bool | TAst.Str | TAst.Record _ -> CfgBuilder.add_insn (Some ret_op, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
     | TAst.Void | TAst.ErrorType -> CfgBuilder.add_insn (None, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
   in (folded_buildlets @ [call_insn], ll_ret_tp, Ll.Id ret_op)
 and codegen_comma env left right tp =
@@ -361,7 +365,7 @@ let codegen_func_decl env fd =
   let ll_ftyp = (ll_param_tys, ll_type_of ret) in
   let builder = CfgBuilder.empty_cfg_builder in
   let params_buildlets, params_uids, env_with_arg = codegen_param_list env params in
-  let body_buildlets, _ = codegen_statement_seq env_with_arg body in
+  let body_buildlets, final_env = codegen_statement_seq env_with_arg body in
   let final_term =
     if ret = TAst.Void
     then CfgBuilder.term_block (Ll.Ret (Ll.Void, None))
@@ -370,7 +374,8 @@ let codegen_func_decl env fd =
   let cfg = CfgBuilder.get_cfg (seq_buildlets builder) in
   let ll_fdecl = Ll.{fty = ll_ftyp; param = params_uids; cfg = cfg} in
   let renamed_fname_sym = if Sym.name fname_sym = "main" then Sym.symbol "dolphin_fun_main" else fname_sym in
-  (renamed_fname_sym, ll_fdecl)
+  let Env.{str_lits; _} = final_env in
+  (renamed_fname_sym, ll_fdecl, str_lits)
 
 let codegen_func_sig fs = 
   let (TAst.FuncSig {name = TAst.Ident {sym}; fun_tp = TAst.FunTyp {ret; params}}) = fs in
@@ -381,14 +386,23 @@ let codegen_external_decl =
   let stdlib_fun = Semant.library_header in
   List.map codegen_func_sig stdlib_fun
 
+let str_lit_to_gdecl (s, sym) =
+  let len = String.length s in
+  let ll_str_type = Ll.Array (len, Ll.I8) in
+  let gd = (ll_str_of_length len, Ll.GStruct [(Ll.I64, Ll.GInt len); (ll_str_type, Ll.GString s)]) in
+  (sym, gd)
+
 let codegen_prog prg =
   let open Sym in
   let open Ll in
   let env = Env.make_empty_env in
-  let fdecls = List.map (codegen_func_decl env) prg in
+  let tprog = List.map (codegen_func_decl env) prg in
+  let fdecls = List.fold_left (fun acc (x, y, _z) -> (x, y) :: acc) [] tprog in
+  let str_lits = List.fold_left (fun acc (_x, _y, z) -> !z @ acc) [] tprog in
+  let gdecls = List.map str_lit_to_gdecl str_lits in
   { tdecls    = DlpStdLib.reserved_record_names
   ; extgdecls = []
-  ; gdecls    = []
+  ; gdecls    = gdecls
   ; extfuns   = codegen_external_decl
   ; fdecls = fdecls
   }

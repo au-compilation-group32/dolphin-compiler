@@ -70,7 +70,10 @@ rule token = parse
     | None -> raise (IntegerOutOfRange(loc, s))
     | Some i -> INT_LIT i
   }
-| '"'[^'"']*'"' as s {STRING_LIT s}
+| '"'[^'"']*'"' as s {
+    let len = String.length s in
+    STRING_LIT (String.sub s 1 (len-2))
+  }
 | ['a'-'z' 'A'-'Z' '_']['0'-'9' 'a'-'z' 'A'-'Z' '_']* as s {IDENT (s)}
 | _ as c {
     let loc = {start_pos = (Lexing.lexeme_start_p lexbuf); end_pos = (Lexing.lexeme_end_p lexbuf)} in
