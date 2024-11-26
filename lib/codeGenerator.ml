@@ -353,7 +353,8 @@ let codegen_func_decl env fd =
   let seq_buildlets = CfgBuilder.seq_buildlets (params_buildlets @ body_buildlets @ [final_term]) in
   let cfg = CfgBuilder.get_cfg (seq_buildlets builder) in
   let ll_fdecl = Ll.{fty = ll_ftyp; param = params_uids; cfg = cfg} in
-  (fname_sym, ll_fdecl)
+  let renamed_fname_sym = if Symbol.name fname_sym = "main" then Symbol.symbol "dolphin_fun_main" else fname_sym in
+  (renamed_fname_sym, ll_fdecl)
 
 let codegen_prog prg =
   let open Sym in

@@ -29,6 +29,7 @@ setup.log
 _opam/
 
 a.out
+*.pch
 
 output_actual.txt
 dolphin_main.ll
