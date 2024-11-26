@@ -1,7 +1,8 @@
 // Positive string test
 
 void print_string(s: string) {
-//  output_string (s, get_stdout());
+  var y = "Hello";
+  output_string (s, get_stdout());
 }
 
 int main () {

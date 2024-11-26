@@ -81,4 +81,4 @@ let insert_str_lit_reg env str =
     let {str_lits; _} = new_env in
     let _ = str_lits := (str, alias_str_lit_sym)::!str_lits in
     new_env, alias_str_lit_sym, alias_conv_str_lit_packed_sym
-  | Some s -> env, s, s
+  | Some s -> env, s, (get_alias_sym env s)
