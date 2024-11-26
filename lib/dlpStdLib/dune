@@ -1,0 +1,4 @@
+(library
+ (name dlpStdLib)
+ (flags (:standard -warn-error -A))
+ (libraries lib))

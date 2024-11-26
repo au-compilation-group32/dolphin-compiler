@@ -1,0 +1,2 @@
+int read_integer();
+void print_integer(i: int);

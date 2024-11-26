@@ -1,7 +1,8 @@
-module Sym = Symbol
-module TAst = TypedAst
-module CfgBuilder = CfgBuilder
-module Env = LlvmEnv
+module Sym = Lib.Symbol
+module TAst = Lib.TypedAst
+module CfgBuilder = Lib.CfgBuilder
+module Env = Lib.LlvmEnv
+module Ll = Lib.Ll
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedErrorType
@@ -353,7 +354,7 @@ let codegen_func_decl env fd =
   let seq_buildlets = CfgBuilder.seq_buildlets (params_buildlets @ body_buildlets @ [final_term]) in
   let cfg = CfgBuilder.get_cfg (seq_buildlets builder) in
   let ll_fdecl = Ll.{fty = ll_ftyp; param = params_uids; cfg = cfg} in
-  let renamed_fname_sym = if Symbol.name fname_sym = "main" then Symbol.symbol "dolphin_fun_main" else fname_sym in
+  let renamed_fname_sym = if Sym.name fname_sym = "main" then Sym.symbol "dolphin_fun_main" else fname_sym in
   (renamed_fname_sym, ll_fdecl)
 
 let codegen_prog prg =

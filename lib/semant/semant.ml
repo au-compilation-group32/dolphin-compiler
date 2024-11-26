@@ -1,7 +1,9 @@
-module Sym = Symbol
-module TAst = TypedAst
-open Ast
-module Env = Env
+module Sym = Lib.Symbol
+module TAst = Lib.TypedAst
+module Ast = Lib.Ast
+module Env = Lib.Env
+module Errors = Lib.Errors
+module Loc = Lib.Location
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnreachableControlFlow
@@ -35,19 +37,21 @@ let typecheck_unop = function
 | Ast.Neg _ -> TAst.Neg
 | Ast.Lnot _ -> TAst.Lnot
 
-let get_expected_binop_arg_typ = function 
+let get_expected_binop_arg_typ op =
+  let open Lib.Ast in match op with
   | Plus _ | Minus _ | Mul _ | Div _ | Rem _ -> TAst.Int
   | Lt _ | Le _ | Gt _ | Ge _ -> TAst.Int
   | Lor _ | Land _ -> TAst.Bool 
   | Eq _ | NEq _ -> raise UnreachableControlFlow
-let get_expected_binop_res_typ = function 
+let get_expected_binop_res_typ op =
+  let open Lib.Ast in match op with
   | Plus _ | Minus _ | Mul _ | Div _ | Rem _ -> TAst.Int
   | Lt _ | Le _ | Gt _ | Ge _ -> TAst.Bool
   | Lor _ | Land _ -> TAst.Bool
   | Eq _ | NEq _ -> TAst.Bool
 let get_expected_unop_arg_typ = function 
-  | Neg _ -> TAst.Int
-  | Lnot _ -> TAst.Bool
+  | Ast.Neg _ -> TAst.Int
+  | Ast.Lnot _ -> TAst.Bool
 
 (* should return a pair of a typed expression and its inferred type. you can/should use typecheck_expr inside infertype_expr. *)
 let rec infertype_expr env expr =
@@ -155,7 +159,7 @@ and typecheck_expr env expr tp =
 
 
 let typecheck_var_delc env var = match var with
-| Declaration {name; tp; body; loc} -> 
+| Ast.Declaration {name; tp; body; loc} -> 
   let decl_sym = let Ast.Ident{name = s; loc = _} = name in Sym.symbol s in
   let typed_body, body_tp, body_loc = infertype_expr env body in
   let _ = 
@@ -310,7 +314,7 @@ and typecheck_statement_seq env stms =
 
 let infertype_param ~reportError env p =
   let Ast.Param{paramname = Ast.Ident{name = name; loc = _}; typ; loc = loc} = p in
-  let param_sym = Symbol.symbol name in
+  let param_sym = Sym.symbol name in
   let _ =
     if reportError && typecheck_typ typ = TAst.Void
     then Env.insert_error env (Errors.FunctionParamInvalidTypeVoid {loc = loc; sym = param_sym})
@@ -328,12 +332,12 @@ let rec add_toplevel_decl_to_env env td_list =
     | Ast.RecordDeclaration rd -> raise Unimplemented
     | Ast.FunctionDeclaration fd -> 
       let Ast.FuncDecl{name = Ident{name; loc = fname_loc}; ret_tp; params; body = _; loc = _} = fd in
-      let sym = Symbol.symbol name in
+      let sym = Sym.symbol name in
       let typed_ret_tp = typecheck_typ ret_tp in
       let typed_params = infertype_param_list ~reportError:true env params in
       let fun_typ = TAst.FunTyp{ret = typed_ret_tp; params = typed_params} in
       let _ = 
-        if Symbol.Table.mem sym idents
+        if Sym.Table.mem sym idents
         then Env.insert_error env (Errors.FunctionDuplicateDeclaration{loc = fname_loc; sym = sym})
         else () in
       let new_env = Env.{env with idents = Env.add_fun_to_env idents (sym, fun_typ)} in
@@ -349,10 +353,10 @@ let get_param_sym_list typed_params =
 
 let typecheck_func_decl env fd =
   let Ast.FuncDecl{name = Ident{name = func_name; loc = _}; ret_tp; params; body = func_body; loc = func_decl_loc} = fd in
-  let func_name_sym = Symbol.symbol func_name in
+  let func_name_sym = Sym.symbol func_name in
   let typed_params = infertype_param_list ~reportError:false env params in
   let param_syms = get_param_sym_list typed_params in
-  let duplicated_syms = Symbol.find_duplicates param_syms in
+  let duplicated_syms = Sym.find_duplicates param_syms in
   let _ =
     if List.length duplicated_syms > 0
     then Env.insert_error env (Errors.FunctionDuplicatedParamnames {loc = func_decl_loc; fname_sym = func_name_sym; syms = duplicated_syms})
@@ -376,7 +380,7 @@ let typecheck_toplevel_decl env td = match td with
 | Ast.FunctionDeclaration fd -> typecheck_func_decl env fd
 
 let check_main_func env =
-  match Env.lookup_var_fun env (Symbol.symbol "main") with
+  match Env.lookup_var_fun env (Sym.symbol "main") with
   | None -> Env.insert_error env Errors.MainFunctionMissing
   | Some fd -> match fd with
     | Env.FunTyp TAst.FunTyp {ret; params} ->
@@ -386,7 +390,7 @@ let check_main_func env =
     | Env.VarTyp _ -> raise UnreachableControlFlow
 
 let typecheck_prog prog =
-  let library_env = Env.make_env Library.library_functions in
+  let library_env = Env.make_env DlpStdLib.library_functions in
   (* Run first pass to add all the declared functions, in case of recursive call*)
   let env = add_toplevel_decl_to_env library_env prog in
   let _ = check_main_func env in

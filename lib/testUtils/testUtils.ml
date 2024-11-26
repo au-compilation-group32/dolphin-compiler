@@ -1,10 +1,10 @@
 module Ast = Lib.Ast
-module Semant = Lib.Semant
+module Semant = Semant
 module Errors = Lib.Errors
 module Pretty = Lib.Pretty
 module TPretty = Lib.TypedPretty
 module SrcProcessor = SrcProcessor
-module CodeGen = Lib.CodeGenerator
+module CodeGen = CodeGenerator
 module Ll = Lib.Ll
 
 let sprint_err e = Printf.sprintf "%s\n" (Errors.error_to_string e)
