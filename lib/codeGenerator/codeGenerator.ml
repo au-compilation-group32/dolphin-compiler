@@ -11,10 +11,15 @@ exception UnexpectedOperator
 
 let string_of_sym (name, i) = name ^ (string_of_int i)
 
+let ll_array = Ll.Ptr (Ll.Namedt (Sym.symbol "array_type"))
 let ll_type_of = function
-  | TAst.Void -> Ll.Void
   | TAst.Int -> Ll.I64
   | TAst.Bool -> Ll.I1
+  | TAst.Void -> Ll.Void
+  | TAst.Byte -> Ll.I8
+  | TAst.Str -> ll_array
+  | TAst.Array _ -> ll_array
+  | TAst.Record {recordname = TAst.RecordName {sym}} -> Ll.Namedt sym
   | TAst.ErrorType -> raise UnexpectedErrorType
 
 let tast_type_of = function
@@ -89,12 +94,16 @@ let rec codegen_expr env expr =
   match expr with
   | TAst.Integer {int} -> ([],Ll.I64, Ll.IConst64 int)
   | TAst.Boolean {bool} -> ([], Ll.I1, Ll.BConst bool)
+  | TAst.String {str} -> codegen_string env str
   | TAst.BinOp {left; op; right; tp} -> codegen_binop env left op right tp
   | TAst.UnOp {op; operand; tp} -> codegen_unop env op operand tp
   | TAst.Lval lvl ->  codegen_lval env lvl
   | TAst.Assignment {lvl; rhs; tp} -> codegen_assignment env lvl rhs tp
   | TAst.Call {fname; args; tp} ->  codegen_call env fname args tp
   | TAst.Comma {left; right; tp} -> codegen_comma env left right tp
+and codegen_string env str =
+  let len = String.length str in
+  raise Unimplemented
 and codegen_binop env left op right tp =
   let ll_tp = ll_type_of tp in
   let left_buildlets, left_tp, left_op = codegen_expr env left in
@@ -316,6 +325,12 @@ and codegen_statement_seq env stms =
   in
   List.fold_left merge ([], env) stms
 
+let codegen_field (TAst.RecordField {typ; _}) = ll_type_of typ
+let codegen_rec_decl rd =
+  let TAst.RecDecl {rec_name = TAst.RecordName {sym}; fields} =rd in
+  let ll_fields = List.map codegen_field fields in
+  (sym, Ll.Struct ll_fields)
+
 let codegen_param env p =
   let TAst.Param {paramname; typ} = p in
   let TAst.Ident {sym} = paramname in
@@ -357,15 +372,23 @@ let codegen_func_decl env fd =
   let renamed_fname_sym = if Sym.name fname_sym = "main" then Sym.symbol "dolphin_fun_main" else fname_sym in
   (renamed_fname_sym, ll_fdecl)
 
+let codegen_func_sig fs = 
+  let (TAst.FuncSig {name = TAst.Ident {sym}; fun_tp = TAst.FunTyp {ret; params}}) = fs in
+  let typed_params = List.map ll_type_of_param params in
+  (sym, (typed_params, ll_type_of ret))
+
+let codegen_external_decl =
+  let stdlib_fun = Semant.library_header in
+  List.map codegen_func_sig stdlib_fun
+
 let codegen_prog prg =
   let open Sym in
   let open Ll in
   let env = Env.make_empty_env in
   let fdecls = List.map (codegen_func_decl env) prg in
-  { tdecls    = []
+  { tdecls    = DlpStdLib.reserved_record_names
   ; extgdecls = []
   ; gdecls    = []
-  ; extfuns   = [ (symbol "print_integer",  ([I64], Void))
-                ; (symbol "read_integer", ([], I64))]
+  ; extfuns   = codegen_external_decl
   ; fdecls = fdecls
   }

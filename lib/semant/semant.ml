@@ -397,8 +397,9 @@ let infertype_library_func_sig (Ast.FuncSig {name = Ast.Ident {name}; ret_tp; pa
   let ftp = TAst.FunTyp {ret = typecheck_typ ret_tp; params = typed_params} in
   TAst.FuncSig {name = TAst.ident_of_string name; fun_tp = ftp}
 
+let library_header = List.map infertype_library_func_sig DlpStdLib.library_functions
+
 let typecheck_prog prog =
-  let library_header = List.map infertype_library_func_sig DlpStdLib.library_functions in
   let library_env = Env.make_env library_header in
   (* Run first pass to add all the declared functions, in case of recursive call*)
   let env = add_toplevel_decl_to_env library_env prog in
