@@ -45,23 +45,29 @@ If semant fail, output_actual.txt and output_expected.txt is the list of errors 
 
 ### Task 1:
 
-We make ReturnStm ret an optional expr to support return void.
+Check the code in lib/ast.ml and lib/typedAst.ml
 
 ### Task 2:
 
-We treat comma expr as an independent pattern rather than incoporate it with other expr. However, a comma expr that enclosed by a pair of parentheses are treat as a proper expr since it is valid anywhere an expr is expected.
-
-We use a pattern called ``exp_or_comma_exp`` anywhere a comma expr is valid with or without parentheses.
+Check the code in lib/srcProcessor/lexer.mll. Most feature are implemented, but unescaped string is not.
 
 ### Task 3:
 
-We add 2 new variables to the environment, ``expected_ret_tp`` to keep track of the return type, and ``has_all_paths_returned`` to keep track of the return status.
+Check the code in lib/srcProcessor/parser.mly.
 
-The first pass is inside the function ``add_decl_func_to_env``. The second pass is just List.map on the prog.
+### Task 4:
+
+Check the code in lib/semant/semant.ml. Most positive features are implemented for string and record. Some part of Array is supported. We only have time to check for a few errors.
 
 ### Task 5:
 
-Test 44 to 57 are new tests.
+The runtime has been incoporated properly. Check the runtime directory. Do note that we don't rename any record and function name (with the exception of main to dolphin_fun_main).
+
+Most feature of codegen for string and record have been implemented.
+
+### Task 6:
+
+test 58 and 59 are new. Test 60 is for array, and it pass semant successfully.
 
 ## TODO list:
 
