@@ -33,6 +33,9 @@ type error =
 | FunctionUnexpectedReturnVoid of {loc: Location.location; typ: TAst.typ}
 | FunctionParamInvalidTypeVoid of {loc: Location.location; sym: Symbol.symbol}
 | FunctionDuplicatedParamnames of {loc: Location.location; fname_sym: Symbol.symbol; syms: Symbol.symbol list}
+| RecordUndeclared of {loc: Location.location; rname: Sym.symbol}
+| FieldAccessOfNonRecord of {expr_tp: TAst.typ; loc: Location.location}
+| FieldNotExist of {expr_tp: TAst.typ; sym: Symbol.symbol; loc: Location.location}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -59,3 +62,6 @@ let error_to_string err =
   | FunctionUnexpectedReturnVoid {loc; typ} -> Printf.sprintf "%s: Return statement have a void expression, expect expression of type %s." (loc_to_string loc) (TPretty.typ_to_string typ)
   | FunctionParamInvalidTypeVoid {loc; sym} -> Printf.sprintf "%s: Param %s has type void. This is illegal." (loc_to_string loc) (Sym.name sym)
   | FunctionDuplicatedParamnames {loc; fname_sym; syms} -> Printf.sprintf "%s: Function %s has duplicated param names: %s." (loc_to_string loc) (Sym.name fname_sym) (sym_list_to_string (List.rev syms))
+  | RecordUndeclared {loc; rname} -> Printf.sprintf "%s: Undeclared record type %s." (loc_to_string loc) (Sym.name rname)
+  | FieldAccessOfNonRecord {expr_tp; loc} -> Printf.sprintf "%s: Trying to access field of non-record typ %s." (loc_to_string loc) (TPretty.typ_to_string expr_tp)
+  | FieldNotExist {expr_tp; sym; loc} -> Printf.sprintf "%s: %s type has no field name %s." (loc_to_string loc) (TPretty.typ_to_string expr_tp) (Sym.name sym)

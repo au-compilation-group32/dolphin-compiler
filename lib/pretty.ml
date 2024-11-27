@@ -75,6 +75,10 @@ let rec expr_to_tree e =
 and lval_to_tree l =
   match l with
   | Var ident -> PBox.hlist ~bars:false [make_info_node_line "Var("; ident_to_tree ident; make_info_node_line ")"]
+  | Fld {record; field; _}->
+    PBox.tree (make_info_node_line "Fld")
+      [PBox.hlist ~bars:false [make_info_node_line "FieldName: "; fieldname_to_tree field];
+      PBox.hlist ~bars:false [make_info_node_line "Record: "; expr_to_tree record]]
 and record_field_init_to_tree (Ast.RecordFieldInit {fieldname; rhs; _}) =
   PBox.tree (make_info_node_line "Field") [fieldname_to_tree fieldname; expr_to_tree rhs]
 

@@ -65,7 +65,7 @@ let rec infertype_expr env expr =
   | Ast.LengthOf {ident; loc} -> raise Unimplemented
   | Ast.BinOp {left; op; right; loc} -> infertype_binop env left op right loc
   | Ast.UnOp {op; operand; loc} -> infertype_unop env op operand loc
-  | Ast.Lval lvl -> infertype_lval env lvl
+  | Ast.Lval lvl -> infertype_lval_expr env lvl
   | Ast.Assignment {lvl; rhs; loc} -> infertype_assignment env lvl rhs loc
   | Ast.Call {fname; args; loc} -> infertype_call env fname args loc
   | Ast.Comma {left; right; loc} -> infertype_comma env left right loc
@@ -102,7 +102,7 @@ and infertype_unop env op operand loc =
       else () in 
     (TAst.UnOp {op = typecheck_unop op; operand = operand_texpr; tp = expected_tp}, expected_tp, loc)
 and infertype_assignment env lvl rhs loc =
-  let _ , lvl_tp, _ = infertype_lval env lvl in
+  let lvl_texpr , lvl_tp, _ = infertype_lval env lvl in
   let rhs_texpr, rhs_tp , _ = infertype_expr env rhs in
   let asgn_tp =
     if rhs_tp = TAst.ErrorType then lvl_tp
@@ -110,25 +110,63 @@ and infertype_assignment env lvl rhs loc =
     else if lvl_tp = rhs_tp then lvl_tp
     else 
       let err = Errors.TypeMismatch {loc = loc; expected = lvl_tp; actual = rhs_tp} in 
-      let _ = Env.insert_error env err in lvl_tp
-  in match lvl with Ast.Var Ast.Ident {name; loc=_} ->
+      let _ = Env.insert_error env err in lvl_tp in
+  (TAst.Assignment{lvl = lvl_texpr; rhs = rhs_texpr; tp = asgn_tp}, asgn_tp, loc)
+  (* in match lvl with
+  | Ast.Var Ast.Ident {name; loc=_} ->
     (TAst.Assignment {lvl = TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = lvl_tp}; rhs = rhs_texpr; tp = asgn_tp}, asgn_tp, loc)
-and infertype_lval env lvl =
+  | Ast.Idx _ -> raise Unimplemented
+  | Ast.Fld {record; field; loc} ->
+    raise Unimplemented *)
+and infertype_lval_expr env lvl =
+  let typed_lvl, lvl_tp, lvl_loc = infertype_lval env lvl in
+  (TAst.Lval typed_lvl, lvl_tp, lvl_loc)
+and infertype_lval env lvl : TAst.lval*TAst.typ*Loc.location=
   match lvl with 
   | Ast.Var Ast.Ident {name; loc} -> 
     let lvl_typ = Env.lookup_var_fun env (Sym.symbol name) in
     begin match lvl_typ with
     | None ->
       let _ = Env.insert_error env (Errors.LValueNotFound {loc = loc; sym = Sym.symbol name}) in
-      (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType, loc)
+      (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}, TAst.ErrorType, loc)
     | Some Env.VarTyp vt ->
-      (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = vt}), vt, loc)
+      (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = vt}, vt, loc)
     | Some Env.FunTyp _ ->
       let _ = Env.insert_error env (Errors.LValueInvalid {loc = loc; sym = Sym.symbol name}) in
-      (TAst.Lval (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}), TAst.ErrorType, loc)
+      (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}, TAst.ErrorType, loc)
     end
   | Ast.Idx _ -> raise Unimplemented
-  | Ast.Fld _ -> raise Unimplemented
+  | Ast.Fld {record; field; loc} ->
+    let typed_record, rec_tp, rec_loc = infertype_expr env record in
+    let Ast.FieldName {name = ast_fieldname; loc = fieldname_loc} = field in
+    let typed_fieldname = TAst.FieldName {sym = Sym.symbol ast_fieldname} in
+    let field_tp =
+      match rec_tp with
+      | TAst.Record {recordname;} ->
+        let TAst.RecordName {sym = rname_sym} = recordname in
+        let lookup_result = Env.lookup_rec_type env rname_sym in
+        begin
+          match lookup_result with
+          | None ->
+            let _ = Env.insert_error env (Errors.RecordUndeclared {loc = rec_loc; rname = rname_sym}) in
+            TAst.ErrorType
+          | Some fields ->
+            let find_result = List.find_opt (fun (TAst.RecordField{fieldname; _}) -> fieldname = typed_fieldname) fields in
+            begin
+              match find_result with
+              | None ->
+                let _ = Env.insert_error env (Errors.FieldNotExist {expr_tp = rec_tp; sym = Sym.symbol ast_fieldname; loc = fieldname_loc}) in
+                TAst.ErrorType
+              | Some e ->
+                let TAst.RecordField {typ; _} = e in
+                typ
+            end
+        end
+      | _ ->
+        let _ = Env.insert_error env (Errors.FieldAccessOfNonRecord {expr_tp = rec_tp; loc = loc}) in
+        TAst.ErrorType
+    in
+    ((TAst.Fld {record = typed_record; field = typed_fieldname; tp = field_tp}), field_tp, loc)
 and infertype_call env fname args loc =
   match fname with Ast.Ident {name; loc = fname_loc} ->
     let fun_sym = Sym.symbol name in
@@ -377,15 +415,18 @@ let typecheck_rec_decl env rd =
 let rec second_pass_add_toplevel_decl_to_env env td_list =
   match td_list with
   | [] -> env
-  | h::t -> match h with
+  | h::t -> 
+    let _ = Printf.printf "\n td_list length %d\n" (List.length td_list) in
+    match h with
     | Ast.RecordDeclaration rd ->
       (*TODO: implement error checks*)
       let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields; loc} = rd in
       let sym = Sym.symbol name in
       let typed_fields = List.map typecheck_field fields in
+      let _ = Printf.printf "\n length %d\n" (List.length typed_fields) in
       let new_env = Env.add_rec_to_env env (sym, typed_fields) in
       second_pass_add_toplevel_decl_to_env new_env t
-    | Ast.FunctionDeclaration _ -> env
+    | Ast.FunctionDeclaration _ -> second_pass_add_toplevel_decl_to_env env t
 
 let insert_param_to_env env param =
   let TAst.Param {paramname = TAst.Ident {sym}; typ} = param in

@@ -15,5 +15,6 @@ int main () {
   //print_string(x);
   var cat: Animal = new Animal {name = "cat"; legs = 4;};
   var pussy = new Animal {name = "pussy"; legs = 2;};
+  cat.legs = 4;
   return 0;
 }

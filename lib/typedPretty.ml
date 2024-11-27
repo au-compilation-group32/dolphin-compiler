@@ -6,6 +6,11 @@ let typ_to_string = function
 | Void -> "void"
 | Int -> "int"
 | Bool -> "bool"
+| Byte _ -> "byte"
+| Str _ -> "str"
+(*TODO: fix this array name*)
+| Array {typ; _} -> "array"
+| Record {recordname = TypedAst.RecordName {sym; _}; _} -> Sym.name sym
 | ErrorType -> "'type error'"
 
 (* producing trees for pretty printing *)
@@ -68,6 +73,10 @@ let rec expr_to_tree e =
 and lval_to_tree l =
   match l with
   | Var {ident; tp} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "Var("; ident_to_tree ident; Pretty.make_info_node_line ")"; PBox.line " : "; typ_to_tree tp;]
+  | Fld {record; field; _}->
+    PBox.tree (Pretty.make_info_node_line "Fld")
+      [PBox.hlist ~bars:false [Pretty.make_info_node_line "FieldName: "; fieldname_to_tree field];
+      PBox.hlist ~bars:false [Pretty.make_info_node_line "Record: "; expr_to_tree record]]
 and record_field_init_to_tree (TypedAst.RecordFieldInit {fieldname; rhs; _}) =
   PBox.tree (Pretty.make_info_node_line "Field") [fieldname_to_tree fieldname; expr_to_tree rhs]
 

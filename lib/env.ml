@@ -18,6 +18,9 @@ type environment = {idents : identType Sym.Table.t;
                     has_all_paths_returned: bool}
 
 let add_rec_to_env env (rsym, body) = {env with rec_names = (Sym.Table.add rsym body env.rec_names)}
+(* let update_rec_to_env env (rsym, body) = 
+  let env2 = {env with rec_names = (Sym.Table.remove rsym env.rec_names)} in
+  {env2 with rec_names = (Sym.Table.add rsym body env2.rec_names)} *)
 
 let add_stdlib_rec_to_env env rd =
   let TAst.RecDecl {rec_name = TAst.RecordName{sym}; fields} = rd in
@@ -56,3 +59,7 @@ let is_inside_loop {is_inside_loop; _} = is_inside_loop
 let expected_ret_tp {expected_ret_tp; _} = expected_ret_tp
 
 let has_all_paths_returned {has_all_paths_returned; _} = has_all_paths_returned
+
+let lookup_rec_type env sym =
+  let {rec_names; _} = env in
+  Sym.Table.find_opt sym rec_names

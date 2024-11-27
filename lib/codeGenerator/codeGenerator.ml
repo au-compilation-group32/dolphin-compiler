@@ -47,6 +47,9 @@ let ptr_operand_of_lval env = function
     let TAst.Ident {sym} = ident in
     let lval_sym = Env.get_alias_sym env sym in
     Ll.Id lval_sym
+  | TAst.Idx _ -> raise Unimplemented
+  | TAst.Fld {record; field; tp} ->
+    raise Unimplemented
 
 (*Return add_insn of res_op = left_op op right_op *)
 let get_binop_insn res_op left_op op right_op op_tp = 
@@ -174,6 +177,9 @@ and codegen_lval env lvl =
     let _, tmp_alias_sym = Env.insert_tmp_reg env in
     let insn = CfgBuilder.add_insn (Some tmp_alias_sym, Ll.Load(ll_typ, lvl_op)) in
     ([insn], ll_typ, Ll.Id tmp_alias_sym)
+  | TAst.Idx _ -> raise Unimplemented
+  | TAst.Fld {record; field; tp} ->
+    raise Unimplemented
 and codegen_call env fname args tp =
   let TAst.Ident {sym = fsym} = fname in
   let ll_ret_tp = ll_type_of tp in
