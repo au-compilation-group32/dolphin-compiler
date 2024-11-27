@@ -8,6 +8,19 @@ exception Unimplemented (* your code should eventually compile without this exce
 exception UnexpectedErrorType
 exception UnexpectedVoidType
 exception UnexpectedOperator
+exception UnexpectedControlFlow
+
+let rec type_of_expr = function
+  | TAst.Integer _ -> TAst.Int
+  | TAst.Boolean _ -> TAst.Bool
+  | TAst.BinOp {tp; _} -> tp
+  | TAst.UnOp {tp; _} -> tp
+  | TAst.Lval lvl -> type_of_lval lvl
+  | TAst.Assignment {tp; _} -> tp
+  | TAst.Call {tp; _} -> tp
+and type_of_lval = function
+  | TAst.Var {tp; _} -> tp
+  | TAst.Fld{tp; _} -> tp
 
 let string_of_sym (name, i) = name ^ (string_of_int i)
 
@@ -41,15 +54,6 @@ let heap_size_of env = function
   (*TODO: calculate this size*)
   | TAst.Record {recordname = TAst.RecordName {sym}} -> 32
   | TAst.ErrorType -> raise UnexpectedErrorType
-
-let ptr_operand_of_lval env = function
-  | TAst.Var {ident; _} ->
-    let TAst.Ident {sym} = ident in
-    let lval_sym = Env.get_alias_sym env sym in
-    Ll.Id lval_sym
-  | TAst.Idx _ -> raise Unimplemented
-  | TAst.Fld {record; field; tp} ->
-    raise Unimplemented
 
 (*Return add_insn of res_op = left_op op right_op *)
 let get_binop_insn res_op left_op op right_op op_tp = 
@@ -115,7 +119,7 @@ let rec codegen_expr env expr =
   | TAst.RecordInitialization {rec_name; fields; tp} -> codegen_record_initialization env rec_name fields tp
   | TAst.BinOp {left; op; right; tp} -> codegen_binop env left op right tp
   | TAst.UnOp {op; operand; tp} -> codegen_unop env op operand tp
-  | TAst.Lval lvl ->  codegen_lval env lvl
+  | TAst.Lval lvl ->  codegen_lval_expr env lvl
   | TAst.Assignment {lvl; rhs; tp} -> codegen_assignment env lvl rhs tp
   | TAst.Call {fname; args; tp} ->  codegen_call env fname args tp
   | TAst.Comma {left; right; tp} -> codegen_comma env left right tp
@@ -166,20 +170,49 @@ and codegen_unop env op operand tp =
 and codegen_assignment env lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
   let _ = assert (rhs_tp = ll_type_of tp) in
-  let lvl_op = ptr_operand_of_lval env lvl in
+  let lvl_op, lvl_tp, lvl_insns = ptr_operand_of_lval env lvl in
   let insn = CfgBuilder.add_insn (None, Ll.Store(rhs_tp, rhs_op, lvl_op)) in
-  (rhs_buildlets @ [insn], rhs_tp, rhs_op)
-and codegen_lval env lvl =
-  match lvl with
-  | TAst.Var {ident = _; tp}->
-    let lvl_op = ptr_operand_of_lval env lvl in
-    let ll_typ = ll_type_of tp in
-    let _, tmp_alias_sym = Env.insert_tmp_reg env in
-    let insn = CfgBuilder.add_insn (Some tmp_alias_sym, Ll.Load(ll_typ, lvl_op)) in
-    ([insn], ll_typ, Ll.Id tmp_alias_sym)
+  (lvl_insns @ rhs_buildlets @ [insn], rhs_tp, rhs_op)
+and ptr_operand_of_lval env = function
+  | TAst.Var {ident; tp} ->
+    let TAst.Ident {sym} = ident in
+    let lval_sym = Env.get_alias_sym env sym in
+    let _ = Printf.printf "\nlval %s\n" (Sym.name lval_sym) in
+    (* let new_env, tmp_sym = Env.insert_tmp_reg env in
+    let load_tmp_insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Load (ll_type_of tp, Ll.Id lval_sym)) in *)
+    (Ll.Id lval_sym, ll_type_of tp, [])
   | TAst.Idx _ -> raise Unimplemented
   | TAst.Fld {record; field; tp} ->
-    raise Unimplemented
+    let rec_insn, rec_ll_tp, rec_op = codegen_expr env record in
+    let new_env, tmp_rec_sym = Env.insert_tmp_reg env in
+    let _ = Printf.printf "\nadd tmp_rec: %s\n" (Sym.name tmp_rec_sym) in
+    let load_rec_insn = CfgBuilder.add_insn (Some tmp_rec_sym, Ll.Load (rec_ll_tp, rec_op)) in
+    let new_env2, ptr_sym = Env.insert_ptr_reg env in
+    (*TODO: implement this path*)
+    let raw_tp = ll_type_of ~raw_records:true (type_of_expr record) in
+    let gep_path = [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int 0)] in
+    let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (raw_tp, Ll.Id tmp_rec_sym, gep_path)) in
+  (Ll.Id ptr_sym, ll_type_of tp, rec_insn @ [load_rec_insn; gep_insn])
+and codegen_lval_expr env lvl =
+  (* let lvl_insns , ll_typ, lvl_op = codegen_lval env lvl in *)
+  let lvl_op, lvl_tp, lvl_insns = ptr_operand_of_lval env lvl in
+  (* let ll_typ = ll_type_of tp in *)
+  let _, tmp_alias_sym = Env.insert_tmp_reg env in
+    let _ = Printf.printf "\nadd tmp_alias: %s\n" (Sym.name tmp_alias_sym) in
+    let _ = Printf.printf "\n lvl_insns_size: %d\n" (List.length lvl_insns) in
+  let tmp_load_insn = CfgBuilder.add_insn (Some tmp_alias_sym, Ll.Load(lvl_tp, lvl_op)) in
+  (lvl_insns @ [tmp_load_insn], lvl_tp, Ll.Id tmp_alias_sym)
+(* and codegen_lval env lvl =
+  match lvl with
+  | TAst.Var {ident; tp} ->
+    let lvl_op, lvl_insns = ptr_operand_of_lval env lvl in
+    let ll_typ = ll_type_of tp in
+    ([], ll_typ, lvl_op)
+  | TAst.Idx _ -> raise Unimplemented
+  | TAst.Fld {record; field; tp} ->
+    let lvl_op, lvl_insns = ptr_operand_of_lval env lvl in
+    let ll_typ = ll_type_of tp in
+    (lvl_insns, ll_typ, lvl_op) *)
 and codegen_call env fname args tp =
   let TAst.Ident {sym = fsym} = fname in
   let ll_ret_tp = ll_type_of tp in

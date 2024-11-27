@@ -1,20 +1,14 @@
 // Positive string test
 
-void print_string(s: string) {
-  var y = "Hello";
-  output_string (s, get_stdout());
-}
 
 record Animal {
-  name: string;
   legs: int;
+  //name: string;
 }
 
 int main () {
-  //var x = "Hello World\n";
-  //print_string(x);
-  var cat: Animal = new Animal {name = "cat"; legs = 4;};
-  var pussy = new Animal {name = "pussy"; legs = 2;};
+  var cat: Animal = new Animal {legs = 4;};
+  //var pussy = new Animal {name = "pussy"; legs = 2;};
   cat.legs = 4;
   return 0;
 }
