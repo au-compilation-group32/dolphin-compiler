@@ -13,14 +13,16 @@ let string_of_sym (name, i) = name ^ (string_of_int i)
 
 let ll_array = Ll.Ptr (Ll.Namedt (Sym.symbol "array_type"))
 let ll_str_of_length len = Ll.Struct [Ll.I64; Ll.Array (len, Ll.I8)]
-let ll_type_of = function
+let ll_type_of ?(raw_records = false)= function
   | TAst.Int -> Ll.I64
   | TAst.Bool -> Ll.I1
   | TAst.Void -> Ll.Void
   | TAst.Byte -> Ll.I8
   | TAst.Str -> ll_array
   | TAst.Array _ -> ll_array
-  | TAst.Record {recordname = TAst.RecordName {sym}} -> Ll.Ptr (Ll.Namedt sym)
+  | TAst.Record {recordname = TAst.RecordName {sym}} ->
+    let raw_type = Ll.Namedt sym in
+    if raw_records then raw_type else Ll.Ptr raw_type
   | TAst.ErrorType -> raise UnexpectedErrorType
 
 let tast_type_of = function
@@ -28,6 +30,17 @@ let tast_type_of = function
   | Ll.I64 -> TAst.Int
   | Ll.I1 -> TAst.Bool
   | Ll.I8 | Ll.I32 | Ll.Ptr _| Ll.Struct _ | Ll.Array _ | Ll.Fun _ | Ll.Namedt _ -> TAst.ErrorType
+
+let heap_size_of env = function
+  | TAst.Int -> 8
+  | TAst.Bool -> 1
+  | TAst.Void -> 1
+  | TAst.Byte -> 1
+  | TAst.Str -> 1
+  | TAst.Array _ -> 1
+  (*TODO: calculate this size*)
+  | TAst.Record {recordname = TAst.RecordName {sym}} -> 32
+  | TAst.ErrorType -> raise UnexpectedErrorType
 
 let ptr_operand_of_lval env = function
   | TAst.Var {ident; _} ->
@@ -96,6 +109,7 @@ let rec codegen_expr env expr =
   | TAst.Integer {int} -> ([],Ll.I64, Ll.IConst64 int)
   | TAst.Boolean {bool} -> ([], Ll.I1, Ll.BConst bool)
   | TAst.String {str} -> codegen_string env str
+  | TAst.RecordInitialization {rec_name; fields; tp} -> codegen_record_initialization env rec_name fields tp
   | TAst.BinOp {left; op; right; tp} -> codegen_binop env left op right tp
   | TAst.UnOp {op; operand; tp} -> codegen_unop env op operand tp
   | TAst.Lval lvl ->  codegen_lval env lvl
@@ -106,8 +120,21 @@ and codegen_string env str =
   let len = String.length str in
   let _, str_lit_sym , conv_str_lit_packed_sym = Env.insert_str_lit_reg env str in
   let bitcast = Ll.Bitcast(Ll.Ptr(ll_str_of_length len), Ll.Gid str_lit_sym, ll_array) in
-  let bitcast_insn = CfgBuilder.add_insn(Some conv_str_lit_packed_sym, bitcast)in
+  let bitcast_insn = CfgBuilder.add_insn(Some conv_str_lit_packed_sym, bitcast) in
   ([bitcast_insn], ll_array, Ll.Id conv_str_lit_packed_sym)
+and codegen_record_initialization env rec_name fields tp =
+  let new_env, ptr_sym = Env.insert_ptr_reg env in
+  let ptr_op = Ll.Id ptr_sym in
+  let ptr_ty = Ll.Ptr Ll.I8 in
+  let mem_size = heap_size_of env tp in
+  let call = Ll.Call(ptr_ty, Ll.Gid (Sym.symbol "allocate_record"), [Ll.I32, Ll.IConst32 (Int32.of_int mem_size)]) in
+  let mem_allo_insn = CfgBuilder.add_insn (Some ptr_sym, call) in
+  let new_env2, casted_ptr_sym = Env.insert_tmp_reg env in
+  let casted_ptr_op = Ll.Id casted_ptr_sym in
+  let casted_ty = ll_type_of tp in
+  let bitcast = Ll.Bitcast(ptr_ty, Ll.Id ptr_sym, casted_ty) in
+  let bitcast_insn = CfgBuilder.add_insn(Some casted_ptr_sym, bitcast) in
+  ([mem_allo_insn; bitcast_insn], casted_ty, casted_ptr_op)
 and codegen_binop env left op right tp =
   let ll_tp = ll_type_of tp in
   let left_buildlets, left_tp, left_op = codegen_expr env left in
@@ -333,7 +360,7 @@ and codegen_statement_seq env stms =
 let codegen_field (TAst.RecordField {typ; _}) = ll_type_of typ
 (*TODO: implement this*)
 let codegen_rec_decl rd =
-  let TAst.RecDecl {rec_name = TAst.RecordName {sym}; fields} =rd in
+  let TAst.RecDecl {rec_name = TAst.RecordName {sym}; fields} = rd in
   let ll_fields = List.map codegen_field fields in
   (sym, Ll.Struct ll_fields)
 
@@ -408,10 +435,10 @@ let filter_func_decl tprog =
       | _ -> None
   ) tprog
 
-let codegen_prog tprog =
+let codegen_prog tprog reg_names =
   let open Sym in
   let open Ll in
-  let env = Env.make_empty_env in
+  let env = Env.make_empty_env reg_names in
   let rdecls = List.map (codegen_rec_decl ) (filter_rec_decl tprog) in
   let fdecls = List.map (codegen_func_decl env) (filter_func_decl tprog) in
   let str_lits = env.str_lits in
@@ -419,6 +446,6 @@ let codegen_prog tprog =
   { tdecls    = DlpStdLib.reserved_record_names @ rdecls
   ; extgdecls = []
   ; gdecls    = gdecls
-  ; extfuns   = codegen_external_decl
+  ; extfuns   = DlpStdLib.runtime_functions @ codegen_external_decl
   ; fdecls = fdecls
   }

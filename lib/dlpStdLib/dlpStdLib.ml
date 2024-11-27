@@ -3,6 +3,11 @@ module TAst = Lib.TypedAst
 module Sym = Lib.Symbol
 module Ll = Lib.Ll
 
+let runtime_functions =
+  [
+    (Sym.symbol "allocate_record", ([Ll.I32], Ll.Ptr Ll.I8))
+  ]
+
 let library_functions = SrcProcessor.header_file_to_ast "lib/dlpStdLib/stdlib.dlp"
 
 let reserved_record_names =

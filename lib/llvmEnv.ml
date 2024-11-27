@@ -10,10 +10,16 @@ let string_of_reg (_, sym) = Sym.name sym
 
 type is_inside_type = {conti: Sym.symbol; brea: Sym.symbol}
 
-type llvmEnvironment = {regs: reg list; str_lits: (string*Sym.symbol) list ref; counter: int ref; is_inside_loop: is_inside_type option}
+type llvmEnvironment = {
+  regs: reg list;
+  rec_names: (TAst.record_field list) Sym.Table.t;
+  str_lits: (string*Sym.symbol) list ref;
+  counter: int ref;
+  is_inside_loop: is_inside_type option
+}
 
 (* create an initial environment with the given functions defined *)
-let make_empty_env :llvmEnvironment = {regs = []; str_lits = ref []; counter = ref 0; is_inside_loop = None}
+let make_empty_env rec_names = {regs = []; rec_names = rec_names; str_lits = ref []; counter = ref 0; is_inside_loop = None}
 
 let insert_reg env sym =
   let {regs; counter; _} = env in
@@ -23,6 +29,11 @@ let insert_reg env sym =
 
 let insert_tmp_reg env = 
   let tmp_sym = Sym.symbol "tmp" in
+  let new_env, alias_sym = insert_reg env tmp_sym in
+  new_env, alias_sym
+
+let insert_ptr_reg env = 
+  let tmp_sym = Sym.symbol "ptr" in
   let new_env, alias_sym = insert_reg env tmp_sym in
   new_env, alias_sym
 
@@ -82,3 +93,6 @@ let insert_str_lit_reg env str =
     let _ = str_lits := (str, alias_str_lit_sym)::!str_lits in
     new_env, alias_str_lit_sym, alias_conv_str_lit_packed_sym
   | Some s -> env, s, (get_alias_sym env s)
+
+let lookup_rec_type env rec_name =
+  Sym.Table.find rec_name env.rec_names 

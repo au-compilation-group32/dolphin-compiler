@@ -450,4 +450,4 @@ let typecheck_prog prog =
   let _ = check_main_func env2 in
   (* Run third pass for semantic analysis*)
   let tprog = List.map (typecheck_toplevel_decl env2) prog in
-  tprog, Env.(env2.errors)
+  tprog, env2.rec_names, Env.(env2.errors)
