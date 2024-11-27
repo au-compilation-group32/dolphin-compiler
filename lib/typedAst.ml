@@ -28,7 +28,7 @@ type expr =
 | Boolean of {bool : bool}
 | Nil
 | String of {str: string}
-| ArrayInitialization of {length_expr: expr; tp: typ}
+| ArrayInitialization of {elem_tp: typ; length_expr: expr; tp: typ}
 | RecordInitialization of {rec_name: recordname; fields: record_field_init list; tp: typ}
 | LengthOf of {ident: ident}
 | BinOp of {left : expr; op : binop; right : expr; tp : typ}

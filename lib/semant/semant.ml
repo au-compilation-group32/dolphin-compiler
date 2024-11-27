@@ -60,7 +60,7 @@ let rec infertype_expr env expr =
   | Ast.Boolean {bool; loc} -> (TAst.Boolean {bool}, TAst.Bool, loc)
   | Ast.Nil {loc} -> raise Unimplemented
   | Ast.String {str; loc} -> (TAst.String {str}, TAst.Str, loc)
-  | Ast.ArrayInitialization {tp; length_expr; loc} -> raise Unimplemented
+  | Ast.ArrayInitialization {elem_tp; length_expr; loc} -> infertype_array_initialization env elem_tp length_expr loc
   | Ast.RecordInitialization {rec_name; fields; loc} -> infertype_record_initialization env rec_name fields loc
   | Ast.LengthOf {ident; loc} -> raise Unimplemented
   | Ast.BinOp {left; op; right; loc} -> infertype_binop env left op right loc
@@ -69,6 +69,11 @@ let rec infertype_expr env expr =
   | Ast.Assignment {lvl; rhs; loc} -> infertype_assignment env lvl rhs loc
   | Ast.Call {fname; args; loc} -> infertype_call env fname args loc
   | Ast.Comma {left; right; loc} -> infertype_comma env left right loc
+and infertype_array_initialization env elem_tp length_expr loc =
+  let typed_length_expr = typecheck_expr env length_expr TAst.Int in
+  let typed_elem_tp = typecheck_typ elem_tp in
+  let arr_tp = TAst.Array {typ = typed_elem_tp} in
+  (TAst.ArrayInitialization {elem_tp = typed_elem_tp; length_expr = typed_length_expr; tp = arr_tp}, arr_tp, loc)
 and infertype_record_initialization env rec_name fields loc =
   let Ast.RecordName {name} = rec_name in
   let typed_rec_name = TAst.RecordName {sym = Sym.symbol name} in
@@ -316,7 +321,6 @@ let rec typecheck_statement env stm =
     let stat, _ = typecheck_statement inside_loop_env body in
     TAst.ForStm{init = ini; cond =con; update =upd; body = stat}, env
   | Ast.BreakStm {loc} -> 
-    let _ = Printf.printf "%b" (Env.is_inside_loop env) in
     let _ = 
       if not (Env.is_inside_loop env)
       then Env.insert_error env (Errors.BreakOrContinueOutsideLoop {loc = loc})
@@ -416,14 +420,12 @@ let rec second_pass_add_toplevel_decl_to_env env td_list =
   match td_list with
   | [] -> env
   | h::t -> 
-    let _ = Printf.printf "\n td_list length %d\n" (List.length td_list) in
     match h with
     | Ast.RecordDeclaration rd ->
       (*TODO: implement error checks*)
       let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields; loc} = rd in
       let sym = Sym.symbol name in
       let typed_fields = List.map typecheck_field fields in
-      let _ = Printf.printf "\n length %d\n" (List.length typed_fields) in
       let new_env = Env.add_rec_to_env env (sym, typed_fields) in
       second_pass_add_toplevel_decl_to_env new_env t
     | Ast.FunctionDeclaration _ -> second_pass_add_toplevel_decl_to_env env t
