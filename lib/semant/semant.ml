@@ -384,9 +384,13 @@ let rec first_pass_add_toplevel_decl_to_env env td_list =
   | [] -> env
   | h::t -> match h with
     | Ast.RecordDeclaration rd ->
-      (*TODO: implement error checks*)
-      let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields; loc} = rd in
+      let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields = _; loc} = rd in
       let sym = Sym.symbol name in
+      let _ =
+        match Env.lookup_rec_type env sym with
+        | None -> ()
+        | Some _ -> Env.insert_error env (Errors.RecordDuplicateDeclaration {loc = rname_loc; sym = sym})
+      in
       let new_env = Env.add_rec_to_env env (sym, []) in
       first_pass_add_toplevel_decl_to_env new_env t
     | Ast.FunctionDeclaration fd -> 
@@ -416,17 +420,24 @@ let typecheck_rec_decl env rd =
   let typed_fields = List.map typecheck_field fields in
   TAst.RecDecl {rec_name = typed_name; fields = typed_fields}
 
+let get_fieldname_sym (Ast.RecordField {fieldname = Ast.FieldName {name; _}; _}) = Sym.symbol name
 let rec second_pass_add_toplevel_decl_to_env env td_list =
   match td_list with
   | [] -> env
   | h::t -> 
     match h with
     | Ast.RecordDeclaration rd ->
-      (*TODO: implement error checks*)
       let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields; loc} = rd in
-      let sym = Sym.symbol name in
+      let recname_sym = Sym.symbol name in
+      let fieldname_syms = List.map get_fieldname_sym fields in
+      let duplicated_syms = Sym.find_duplicates fieldname_syms in
+      let _ =
+        if List.length duplicated_syms > 0
+        then Env.insert_error env (Errors.RecordDuplicatedFieldnames {loc = loc; rname_sym = recname_sym; syms = duplicated_syms})
+        else ()
+      in
       let typed_fields = List.map typecheck_field fields in
-      let new_env = Env.add_rec_to_env env (sym, typed_fields) in
+      let new_env = Env.add_rec_to_env env (recname_sym, typed_fields) in
       second_pass_add_toplevel_decl_to_env new_env t
     | Ast.FunctionDeclaration _ -> second_pass_add_toplevel_decl_to_env env t
 

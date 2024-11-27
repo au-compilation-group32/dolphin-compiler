@@ -1,4 +1,4 @@
-// Positive string test
+// Positive test
 
 void print_string (s:string) {
   output_string (s, get_stdout());
