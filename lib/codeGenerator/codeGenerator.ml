@@ -184,15 +184,15 @@ and ptr_operand_of_lval env = function
   | TAst.Idx _ -> raise Unimplemented
   | TAst.Fld {record; field; tp} ->
     let rec_insn, rec_ll_tp, rec_op = codegen_expr env record in
-    let new_env, tmp_rec_sym = Env.insert_tmp_reg env in
+    (* let new_env, tmp_rec_sym = Env.insert_tmp_reg env in
     let _ = Printf.printf "\nadd tmp_rec: %s\n" (Sym.name tmp_rec_sym) in
-    let load_rec_insn = CfgBuilder.add_insn (Some tmp_rec_sym, Ll.Load (rec_ll_tp, rec_op)) in
+    let load_rec_insn = CfgBuilder.add_insn (Some tmp_rec_sym, Ll.Load (rec_ll_tp, rec_op)) in *)
     let new_env2, ptr_sym = Env.insert_ptr_reg env in
     (*TODO: implement this path*)
     let raw_tp = ll_type_of ~raw_records:true (type_of_expr record) in
     let gep_path = [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int 0)] in
-    let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (raw_tp, Ll.Id tmp_rec_sym, gep_path)) in
-  (Ll.Id ptr_sym, ll_type_of tp, rec_insn @ [load_rec_insn; gep_insn])
+    let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (raw_tp, rec_op, gep_path)) in
+  (Ll.Id ptr_sym, ll_type_of tp, rec_insn @ [gep_insn])
 and codegen_lval_expr env lvl =
   (* let lvl_insns , ll_typ, lvl_op = codegen_lval env lvl in *)
   let lvl_op, lvl_tp, lvl_insns = ptr_operand_of_lval env lvl in

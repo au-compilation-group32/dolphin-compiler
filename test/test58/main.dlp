@@ -8,7 +8,8 @@ record Animal {
 
 int main () {
   var cat: Animal = new Animal {legs = 4;};
-  //var pussy = new Animal {name = "pussy"; legs = 2;};
+  //var spider = new Animal {name = "spider"; legs = 8;};
   cat.legs = 4;
+  print_integer(cat.legs);
   return 0;
 }
