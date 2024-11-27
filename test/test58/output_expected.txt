@@ -1,6 +1,4 @@
-100
-101
-102
-103
-103
+cat4
+cat2
+spider8
 return 0

@@ -147,19 +147,32 @@ and codegen_string env str =
   let bitcast = Ll.Bitcast(Ll.Ptr(ll_str_of_length len), Ll.Gid str_lit_sym, ll_array) in
   let bitcast_insn = CfgBuilder.add_insn(Some conv_str_lit_packed_sym, bitcast) in
   ([bitcast_insn], ll_array, Ll.Id conv_str_lit_packed_sym)
-and codegen_record_initialization env rec_name fields tp =
+and codegen_record_initialization env rec_name field_inits tp =
+  (* TODO: refactor this using codegen assignment and codegen lval*)
   let new_env, ptr_sym = Env.insert_ptr_reg env in
   let ptr_op = Ll.Id ptr_sym in
   let ptr_ty = Ll.Ptr Ll.I8 in
-  let mem_size = heap_size_of env tp in
+  let mem_size = heap_size_of new_env tp in
   let call = Ll.Call(ptr_ty, Ll.Gid (Sym.symbol "allocate_record"), [Ll.I32, Ll.IConst32 (Int32.of_int mem_size)]) in
   let mem_allo_insn = CfgBuilder.add_insn (Some ptr_sym, call) in
-  let new_env2, casted_ptr_sym = Env.insert_tmp_reg env in
+  let new_env2, casted_ptr_sym = Env.insert_tmp_reg new_env in
   let casted_ptr_op = Ll.Id casted_ptr_sym in
   let casted_ty = ll_type_of tp in
   let bitcast = Ll.Bitcast(ptr_ty, Ll.Id ptr_sym, casted_ty) in
   let bitcast_insn = CfgBuilder.add_insn(Some casted_ptr_sym, bitcast) in
-  ([mem_allo_insn; bitcast_insn], casted_ty, casted_ptr_op)
+  let TAst.RecordName {sym = rec_name_sym} = rec_name in
+  let fields = Env.lookup_rec_type new_env2 rec_name_sym in
+  let init_insns = List.fold_left ( @ ) [] (List.map (codegen_record_field_init new_env2 tp casted_ptr_op) field_inits) in 
+  ([mem_allo_insn; bitcast_insn] @ init_insns, casted_ty, casted_ptr_op)
+and codegen_record_field_init env rec_tp rec_ptr field_init =
+  let TAst.RecordFieldInit {fieldname; rhs; _} = field_init in
+  let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
+  let _, ptr_sym = Env.insert_ptr_reg env in
+  let raw_tp = ll_type_of ~raw_records:true rec_tp in
+  let gep_path = get_gep_path_of_field env rec_tp fieldname in
+  let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (raw_tp, rec_ptr, gep_path)) in
+  let load_insn = CfgBuilder.add_insn (None, Ll.Store(rhs_tp, rhs_op, Ll.Id ptr_sym)) in
+  rhs_buildlets @ [gep_insn; load_insn]
 and codegen_binop env left op right tp =
   let ll_tp = ll_type_of tp in
   let left_buildlets, left_tp, left_op = codegen_expr env left in

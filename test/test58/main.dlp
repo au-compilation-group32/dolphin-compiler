@@ -1,5 +1,8 @@
 // Positive string test
 
+void print_string (s:string) {
+  output_string (s, get_stdout());
+}
 
 record Animal {
   name: string;
@@ -7,9 +10,14 @@ record Animal {
 }
 
 int main () {
-  var cat: Animal = new Animal {legs = 4;};
-  //var spider = new Animal {name = "spider"; legs = 8;};
-  cat.legs = 4;
+  var cat: Animal = new Animal {name = "cat"; legs = 4;};
+  var spider = new Animal {name = "spider"; legs = 8;};
+  print_string(cat.name);
   print_integer(cat.legs);
+  cat.legs = 2;
+  print_string(cat.name);
+  print_integer(cat.legs);
+  print_string(spider.name);
+  print_integer(spider.legs);
   return 0;
 }
