@@ -2,8 +2,8 @@
 
 
 record Animal {
+  name: string;
   legs: int;
-  //name: string;
 }
 
 int main () {

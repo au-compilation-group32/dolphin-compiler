@@ -9,6 +9,7 @@ exception UnexpectedErrorType
 exception UnexpectedVoidType
 exception UnexpectedOperator
 exception UnexpectedControlFlow
+exception FieldNotFound
 
 let rec type_of_expr = function
   | TAst.Integer _ -> TAst.Int
@@ -44,17 +45,34 @@ let tast_type_of = function
   | Ll.I1 -> TAst.Bool
   | Ll.I8 | Ll.I32 | Ll.Ptr _| Ll.Struct _ | Ll.Array _ | Ll.Fun _ | Ll.Namedt _ -> TAst.ErrorType
 
-let heap_size_of env = function
+let rec heap_size_of env = function
   | TAst.Int -> 8
   | TAst.Bool -> 1
   | TAst.Void -> 1
   | TAst.Byte -> 1
   | TAst.Str -> 1
   | TAst.Array _ -> 1
-  (*TODO: calculate this size*)
-  | TAst.Record {recordname = TAst.RecordName {sym}} -> 32
+  | TAst.Record {recordname = TAst.RecordName {sym}} ->
+    let fields = Env.lookup_rec_type env sym in
+    let size_of_fields = List.map (fun (TAst.RecordField {typ; _}) -> (heap_size_of env typ)) fields in
+    List.fold_left ( + ) 0 size_of_fields
   | TAst.ErrorType -> raise UnexpectedErrorType
 
+let rec find_field_index fieldname fields =
+  match fields with
+  | [] -> raise FieldNotFound
+  | h::t ->
+    let TAst.RecordField  {fieldname = h_name; _} = h in
+    if h_name = fieldname then 0 else 1 + find_field_index fieldname t
+
+let get_gep_path_of_field env tp (field:TAst.fieldname) =
+  match tp with
+  | TAst.Record {recordname = TAst.RecordName {sym}} ->
+    let fields = Env.lookup_rec_type env sym in
+    (* let TAst.FieldName {sym = expected_field } = field in *)
+    let index = find_field_index field fields in
+    [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int index)]
+  | _ -> raise UnexpectedControlFlow
 (*Return add_insn of res_op = left_op op right_op *)
 let get_binop_insn res_op left_op op right_op op_tp = 
   match op with
@@ -170,14 +188,13 @@ and codegen_unop env op operand tp =
 and codegen_assignment env lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
   let _ = assert (rhs_tp = ll_type_of tp) in
-  let lvl_op, lvl_tp, lvl_insns = ptr_operand_of_lval env lvl in
+  let lvl_op, lvl_tp, lvl_insns = codegen_lval env lvl in
   let insn = CfgBuilder.add_insn (None, Ll.Store(rhs_tp, rhs_op, lvl_op)) in
   (lvl_insns @ rhs_buildlets @ [insn], rhs_tp, rhs_op)
-and ptr_operand_of_lval env = function
+and codegen_lval env = function
   | TAst.Var {ident; tp} ->
     let TAst.Ident {sym} = ident in
     let lval_sym = Env.get_alias_sym env sym in
-    let _ = Printf.printf "\nlval %s\n" (Sym.name lval_sym) in
     (* let new_env, tmp_sym = Env.insert_tmp_reg env in
     let load_tmp_insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Load (ll_type_of tp, Ll.Id lval_sym)) in *)
     (Ll.Id lval_sym, ll_type_of tp, [])
@@ -185,21 +202,18 @@ and ptr_operand_of_lval env = function
   | TAst.Fld {record; field; tp} ->
     let rec_insn, rec_ll_tp, rec_op = codegen_expr env record in
     (* let new_env, tmp_rec_sym = Env.insert_tmp_reg env in
-    let _ = Printf.printf "\nadd tmp_rec: %s\n" (Sym.name tmp_rec_sym) in
     let load_rec_insn = CfgBuilder.add_insn (Some tmp_rec_sym, Ll.Load (rec_ll_tp, rec_op)) in *)
     let new_env2, ptr_sym = Env.insert_ptr_reg env in
     (*TODO: implement this path*)
     let raw_tp = ll_type_of ~raw_records:true (type_of_expr record) in
-    let gep_path = [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int 0)] in
+    let gep_path = get_gep_path_of_field env (type_of_expr record) field in
     let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (raw_tp, rec_op, gep_path)) in
   (Ll.Id ptr_sym, ll_type_of tp, rec_insn @ [gep_insn])
 and codegen_lval_expr env lvl =
   (* let lvl_insns , ll_typ, lvl_op = codegen_lval env lvl in *)
-  let lvl_op, lvl_tp, lvl_insns = ptr_operand_of_lval env lvl in
+  let lvl_op, lvl_tp, lvl_insns = codegen_lval env lvl in
   (* let ll_typ = ll_type_of tp in *)
   let _, tmp_alias_sym = Env.insert_tmp_reg env in
-    let _ = Printf.printf "\nadd tmp_alias: %s\n" (Sym.name tmp_alias_sym) in
-    let _ = Printf.printf "\n lvl_insns_size: %d\n" (List.length lvl_insns) in
   let tmp_load_insn = CfgBuilder.add_insn (Some tmp_alias_sym, Ll.Load(lvl_tp, lvl_op)) in
   (lvl_insns @ [tmp_load_insn], lvl_tp, Ll.Id tmp_alias_sym)
 (* and codegen_lval env lvl =
@@ -395,9 +409,7 @@ and codegen_statement_seq env stms =
   in
   List.fold_left merge ([], env) stms
 
-(*TODO: implement this*)
 let codegen_field (TAst.RecordField {typ; _}) = ll_type_of typ
-(*TODO: implement this*)
 let codegen_rec_decl rd =
   let TAst.RecDecl {rec_name = TAst.RecordName {sym}; fields} = rd in
   let ll_fields = List.map codegen_field fields in
