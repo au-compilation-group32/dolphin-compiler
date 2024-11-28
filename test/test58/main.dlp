@@ -13,7 +13,11 @@ record Animal {
 int main () {
   var x = "HelloWorld";
   print_string(x);
+  x = "HelloWorld";
+  print_string(x);
   x = "Hello World";
+  print_string(x);
+  x = "Hello World\n";
   print_string(x);
   x = "Hello World\n";
   print_string(x);

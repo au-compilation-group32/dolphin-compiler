@@ -48,6 +48,11 @@ let insert_arg env sym =
   let new_env, alias_sym = insert_reg env arg_sym in
   new_env, alias_sym
 
+let insert_conv_reg env = 
+  let tmp_sym = Sym.symbol "conv_str_lit_packed" in
+  let new_env, alias_sym = insert_reg env tmp_sym in
+  new_env, alias_sym
+
 let rec lookup_aux lst sym =
   match lst with
   | [] -> failwith ("Symbol " ^ (Sym.name sym) ^ " not found.")
@@ -87,12 +92,12 @@ let insert_str_lit_reg env str =
   | None -> 
     let str_lit_sym = Sym.symbol "str_lit" in
     let new_env, alias_str_lit_sym = insert_reg env str_lit_sym in
-    let conv_str_lit_packed_sym = Sym.symbol "conv_str_lit_packed" in
-    let new_env, alias_conv_str_lit_packed_sym = insert_reg new_env conv_str_lit_packed_sym in
+    (* let conv_str_lit_packed_sym = Sym.symbol "conv_str_lit_packed" in *)
+    (* let new_env, alias_conv_str_lit_packed_sym = insert_reg new_env conv_str_lit_packed_sym in *)
     let {str_lits; _} = new_env in
     let _ = str_lits := (str, alias_str_lit_sym)::!str_lits in
-    new_env, alias_str_lit_sym, alias_conv_str_lit_packed_sym
-  | Some s -> env, s, (get_alias_sym env s)
+    new_env, alias_str_lit_sym
+  | Some s -> env, s
 
 let lookup_rec_type env rec_name =
   Sym.Table.find rec_name env.rec_names 

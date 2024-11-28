@@ -144,7 +144,8 @@ let rec codegen_expr env expr =
 and codegen_string env str =
   (*TODO: handle 2 string that is exactly the same*)
   let len = String.length str in
-  let _, str_lit_sym , conv_str_lit_packed_sym = Env.insert_str_lit_reg env str in
+  let _, str_lit_sym = Env.insert_str_lit_reg env str in
+  let _, conv_str_lit_packed_sym = Env.insert_conv_reg env in 
   let bitcast = Ll.Bitcast(Ll.Ptr(ll_str_of_length len), Ll.Gid str_lit_sym, ll_array) in
   let bitcast_insn = CfgBuilder.add_insn(Some conv_str_lit_packed_sym, bitcast) in
   ([bitcast_insn], ll_array, Ll.Id conv_str_lit_packed_sym)
