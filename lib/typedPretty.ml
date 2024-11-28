@@ -55,7 +55,7 @@ let rec expr_to_tree e =
   match e with
   | Integer {int; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "IntLit("; PBox.line (Int64.to_string int); Pretty.make_info_node_line ")"]
   | Boolean {bool; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "BooleanLit("; Pretty.make_keyword_line (if bool then "true" else "false"); Pretty.make_info_node_line ")"]
-  | String {str; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "StringLit("; PBox.line (str); Pretty.make_info_node_line ")"]
+  | String {str; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "StringLit("; PBox.line (String.escaped str); Pretty.make_info_node_line ")"]
   | ArrayInitialization {elem_tp; length_expr; _} ->
     PBox.tree (Pretty.make_info_node_line "ArrayInit")
       [PBox.hlist ~bars:false [Pretty.make_info_node_line "ElemType: "; typ_to_tree elem_tp];

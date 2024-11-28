@@ -1,4 +1,14 @@
-cat4
-cat2
-spider8
+HelloWorld
+Hello World
+Hello World
+
+Hello	World
+Hello	World
+
+cat
+4
+cat
+2
+spider
+8
 return 0

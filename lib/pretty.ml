@@ -58,7 +58,7 @@ let rec expr_to_tree e =
   match e with
   | Integer {int; _} -> PBox.hlist ~bars:false [make_info_node_line "IntLit("; PBox.line (Int64.to_string int); make_info_node_line ")"]
   | Boolean {bool; _} -> PBox.hlist ~bars:false [make_info_node_line "BooleanLit("; make_keyword_line (if bool then "true" else "false"); make_info_node_line ")"]
-  | String {str; _} -> PBox.hlist ~bars:false [make_info_node_line "StringLit("; PBox.line (str); make_info_node_line ")"]
+  | String {str; _} -> PBox.hlist ~bars:false [make_info_node_line "StringLit("; PBox.line (String.escaped str); make_info_node_line ")"]
   | ArrayInitialization {elem_tp; length_expr; _} ->
     PBox.tree (make_info_node_line "ArrayInit")
       [PBox.hlist ~bars:false [make_info_node_line "ElemType: "; typ_to_tree elem_tp];

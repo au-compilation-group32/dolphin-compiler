@@ -2,6 +2,7 @@
 
 void print_string (s:string) {
   output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
 }
 
 record Animal {
@@ -10,6 +11,17 @@ record Animal {
 }
 
 int main () {
+  var x = "HelloWorld";
+  print_string(x);
+  x = "Hello World";
+  print_string(x);
+  x = "Hello World\n";
+  print_string(x);
+  x = "Hello\tWorld";
+  print_string(x);
+  x = "Hello\tWorld\n";
+  print_string(x);
+
   var cat: Animal = new Animal {name = "cat"; legs = 4;};
   var spider = new Animal {name = "spider"; legs = 8;};
   print_string(cat.name);

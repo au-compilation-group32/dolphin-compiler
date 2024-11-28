@@ -97,7 +97,7 @@ exp:
 | i = INT_LIT {Ast.Integer {int = i; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | TRUE {Ast.Boolean {bool = true; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | FALSE {Ast.Boolean {bool = false; loc = {start_pos = $startpos; end_pos = $endpos}}}
-| s = STRING_LIT {Ast.String {str = s; loc = {start_pos = $startpos; end_pos = $endpos}}}
+| s = STRING_LIT {Ast.String {str = Scanf.unescaped s; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | NEW rn = rec_name LBRACE fi_list = list(rec_field_init) RBRACE {Ast.RecordInitialization {rec_name = rn; fields = fi_list; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | NEW t = tp LBRACKET e = exp RBRACKET {Ast.ArrayInitialization {elem_tp = t; length_expr = e; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | l = exp o = binop r = exp {Ast.BinOp{left = l; op = o; right = r; loc = {start_pos = $startpos; end_pos = $endpos}}}
