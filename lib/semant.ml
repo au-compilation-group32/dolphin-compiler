@@ -146,7 +146,12 @@ and infertype_lval env lvl =
       match exprType with TAst.Array {typ} ->
         (TAst.Lval (TAst.Idx {arr = exprFound; index = exprFound2}), typ, loc)
       end
-  | Ast.Fld _ -> raise Unimplemented
+  | Ast.Fld {record; field; loc} -> 
+    let exprFound, exprType, _ = infertype_expr env record in
+    begin
+      match field with Ast.FieldName {name; loc} ->
+        (TAst.Lval (TAst.Fld {record = exprFound; field = TAst.FieldName {sym = name}}), exprType, loc)
+      end 
 and infertype_call env fname args loc =
   match fname with Ast.Ident {name; loc = fname_loc} ->
     let fun_sym = Sym.symbol name in
