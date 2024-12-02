@@ -117,6 +117,7 @@ exp_or_comma_exp:
 
 lval:
 | i = IDENT {Ast.Var (Ast.Ident {name = i; loc = {start_pos = $startpos; end_pos = $endpos}})}
+| a = exp LBRACKET i = exp RBRACKET {Ast.Idx {arr = a; index = i; loc = {start_pos = $startpos; end_pos = $endpos}}}
 | e = exp DOT f = field_name {Ast.Fld {record = e; field = f; loc = {start_pos = $startpos; end_pos = $endpos}}}
 
 single_decl:

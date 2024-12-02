@@ -140,7 +140,17 @@ and infertype_lval env lvl : TAst.lval*TAst.typ*Loc.location=
       let _ = Env.insert_error env (Errors.LValueInvalid {loc = loc; sym = Sym.symbol name}) in
       (TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = TAst.ErrorType}, TAst.ErrorType, loc)
     end
-  | Ast.Idx _ -> raise Unimplemented
+  | Ast.Idx {arr; index; loc} ->
+    let typed_arr, arr_tp, arr_loc = infertype_expr env arr in
+    let elem_tp = 
+      begin match arr_tp with
+      | TAst.Array {typ;} -> typ
+      | _ -> 
+        let _ = Env.insert_error env (Errors.IndexAccessOfNonArray {loc = arr_loc}) in
+        TAst.ErrorType
+      end in
+    let typed_index = typecheck_expr env index TAst.Int in
+    (TAst.Idx {arr = typed_arr; index = typed_index; tp = elem_tp}, elem_tp, loc)
   | Ast.Fld {record; field; loc} ->
     let typed_record, rec_tp, rec_loc = infertype_expr env record in
     let Ast.FieldName {name = ast_fieldname; loc = fieldname_loc} = field in

@@ -38,6 +38,7 @@ type error =
 | RecordUndeclared of {loc: Location.location; rname: Sym.symbol}
 | FieldAccessOfNonRecord of {expr_tp: TAst.typ; loc: Location.location}
 | FieldNotExist of {expr_tp: TAst.typ; sym: Symbol.symbol; loc: Location.location}
+| IndexAccessOfNonArray of {loc: Location.location}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -69,3 +70,4 @@ let error_to_string err =
   | RecordUndeclared {loc; rname} -> Printf.sprintf "%s: Undeclared record type %s." (loc_to_string loc) (Sym.name rname)
   | FieldAccessOfNonRecord {expr_tp; loc} -> Printf.sprintf "%s: Trying to access field of non-record typ %s." (loc_to_string loc) (TPretty.typ_to_string expr_tp)
   | FieldNotExist {expr_tp; sym; loc} -> Printf.sprintf "%s: %s type has no field name %s." (loc_to_string loc) (TPretty.typ_to_string expr_tp) (Sym.name sym)
+  | IndexAccessOfNonArray {loc} -> Printf.sprintf "%s: Index access of non array." (loc_to_string loc)

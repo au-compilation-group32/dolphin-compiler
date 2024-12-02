@@ -11,6 +11,7 @@ record Animal {
 
 int main () {
   var x = new int[10];
+  x[1] = 419;
   var cats = new Animal[10];
   return 0;
 }

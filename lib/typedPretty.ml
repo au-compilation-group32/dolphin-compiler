@@ -77,6 +77,10 @@ let rec expr_to_tree e =
 and lval_to_tree l =
   match l with
   | Var {ident; tp} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "Var("; ident_to_tree ident; Pretty.make_info_node_line ")"; PBox.line " : "; typ_to_tree tp;]
+  | Idx {arr; index; _} ->
+    PBox.tree (Pretty.make_info_node_line "Idx")
+      [PBox.hlist ~bars:false [Pretty.make_info_node_line "Arr: "; expr_to_tree arr];
+      PBox.hlist ~bars:false [Pretty.make_info_node_line "Index: "; expr_to_tree index]]
   | Fld {record; field; _}->
     PBox.tree (Pretty.make_info_node_line "Fld")
       [PBox.hlist ~bars:false [Pretty.make_info_node_line "FieldName: "; fieldname_to_tree field];
