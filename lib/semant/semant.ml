@@ -235,14 +235,13 @@ let typecheck_var_delc env var = match var with
   | Some t -> 
     let decl_tp = typecheck_typ t in
     match decl_tp with
-    | TAst.Int | TAst.Bool | TAst.Str | TAst.Record _ ->
+    | TAst.Int | TAst.Bool | TAst.Str | TAst.Byte | TAst.Record _ | TAst.Array _ ->
       let _ =
         if decl_tp <> body_tp && body_tp <> TAst.ErrorType
         then Env.insert_error env (Errors.TypeMismatch{loc = loc; expected = decl_tp; actual = body_tp})
         else () in
       decl_tp
     | TAst.Void ->
-      (* This case is unreachable in phase 1, but it can be in later phases where there is a void type in AST*)
       let _ = Env.insert_error env (Errors.InvalidVoidType{loc = loc; sym = decl_sym}) in
       if body_tp <> TAst.Void then body_tp else TAst.ErrorType
     | TAst.ErrorType -> raise UnexpectedErrorType
@@ -288,7 +287,7 @@ let rec typecheck_statement env stm =
       let _ =
         begin match e with
           | Ast.Assignment _ | Ast.Call _ -> ()
-          | Ast.Integer _ | Ast.Boolean _ | Ast.BinOp _ | Ast.UnOp _ | Ast.Lval _ | Ast.Comma _ -> 
+          | Ast.Integer _ | Ast.Boolean _ | Ast.BinOp _ | Ast.UnOp _ | Ast.Lval _ | Ast.Comma _ | String _ | ArrayInitialization _ | RecordInitialization _ | Ast.Nil _ | Ast.LengthOf _-> 
             Env.insert_error env (Errors.ShouldBeCallOrAssignment {loc = loc})
         end in
       (TAst.ExprStm {expr=Some b}, env)

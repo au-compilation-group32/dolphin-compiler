@@ -3,9 +3,11 @@ module TAst = Lib.TypedAst
 module Sym = Lib.Symbol
 module Ll = Lib.Ll
 
+let ll_array = Ll.Ptr (Ll.Namedt (Sym.symbol "array_type"))
 let runtime_functions =
   [
-    (Sym.symbol "allocate_record", ([Ll.I32], Ll.Ptr Ll.I8))
+    (Sym.symbol "allocate_record", ([Ll.I32], Ll.Ptr Ll.I8));
+    (Sym.symbol "allocate_array", ([Ll.I32; Ll.I64; Ll.Ptr Ll.I8], ll_array))
   ]
 
 let library_functions = SrcProcessor.header_file_to_ast "lib/dlpStdLib/stdlib.dlp"

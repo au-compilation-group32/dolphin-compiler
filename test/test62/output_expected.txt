@@ -1,8 +1,23 @@
-[36m@ 12:7-13[0m: Record Animal has already been declared. Duplicated record names are not allowed.
-[36m@ 18:7-13[0m: Record Animal has already been declared. Duplicated record names are not allowed.
-[36m@ 12:0-16:1[0m: Record Animal has duplicated field names: name.
-[36m@ 18:0-22:1[0m: Record Animal has duplicated field names: name.
-[36m@ 24:0-30:1[0m: Record Animal2 has duplicated field names: name, legs, legs.
-[36m@ 34:2-8[0m: Trying to access field of non-record typ int.
-[36m@ 36:6-10[0m: Animal type has no field name tail.
-[36m@ 37:2-18[0m: Type mismatch: expected int but found bool.
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+419
+421
+0
+0
+0
+421
+0
+0
+0
+0
+0
+0
+return 0

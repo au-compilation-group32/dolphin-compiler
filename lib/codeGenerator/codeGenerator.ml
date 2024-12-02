@@ -14,18 +14,26 @@ exception FieldNotFound
 let rec type_of_expr = function
   | TAst.Integer _ -> TAst.Int
   | TAst.Boolean _ -> TAst.Bool
+  | TAst.Nil -> raise Unimplemented
+  | TAst.String _ -> TAst.Str
+  | TAst.ArrayInitialization {tp; _} -> tp
+  | TAst.RecordInitialization {tp; _} -> tp
+  | TAst.LengthOf _ -> raise Unimplemented
   | TAst.BinOp {tp; _} -> tp
   | TAst.UnOp {tp; _} -> tp
   | TAst.Lval lvl -> type_of_lval lvl
   | TAst.Assignment {tp; _} -> tp
   | TAst.Call {tp; _} -> tp
+  | TAst.Comma {tp; _} -> tp
 and type_of_lval = function
   | TAst.Var {tp; _} -> tp
+  | TAst.Idx {tp; _} -> tp
   | TAst.Fld{tp; _} -> tp
 
 let string_of_sym (name, i) = name ^ (string_of_int i)
 
-let ll_array = Ll.Ptr (Ll.Namedt (Sym.symbol "array_type"))
+let ll_array_raw = Ll.Namedt (Sym.symbol "array_type")
+let ll_array = Ll.Ptr ll_array_raw
 let ll_str_of_length len = Ll.Struct [Ll.I64; Ll.Array (len, Ll.I8)]
 let ll_type_of ?(raw_records = false)= function
   | TAst.Int -> Ll.I64
@@ -58,6 +66,15 @@ let rec heap_size_of env = function
     List.fold_left ( + ) 0 size_of_fields
   | TAst.ErrorType -> raise UnexpectedErrorType
 
+let default_operand_of = function
+  | TAst.Int -> Ll.IConst64 0L
+  | TAst.Bool -> Ll.BConst false
+  | TAst.Void -> raise UnexpectedControlFlow
+  | TAst.Byte -> raise Unimplemented
+  | TAst.Str -> raise Unimplemented
+  | TAst.Array _ -> raise Unimplemented
+  | TAst.Record _ -> raise Unimplemented
+  | TAst.ErrorType -> raise UnexpectedErrorType
 let rec find_field_index fieldname fields =
   match fields with
   | [] -> raise FieldNotFound
@@ -65,11 +82,10 @@ let rec find_field_index fieldname fields =
     let TAst.RecordField  {fieldname = h_name; _} = h in
     if h_name = fieldname then 0 else 1 + find_field_index fieldname t
 
-let get_gep_path_of_field env tp (field:TAst.fieldname) =
+let get_gep_path_of_field env tp field =
   match tp with
   | TAst.Record {recordname = TAst.RecordName {sym}} ->
     let fields = Env.lookup_rec_type env sym in
-    (* let TAst.FieldName {sym = expected_field } = field in *)
     let index = find_field_index field fields in
     [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int index)]
   | _ -> raise UnexpectedControlFlow
@@ -92,6 +108,7 @@ let get_binop_insn res_op left_op op right_op op_tp =
     | TAst.Int -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.I64, left_op, right_op))
     | TAst.Bool -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.I1, left_op, right_op))
     | TAst.Void -> raise UnexpectedVoidType
+    | TAst.Byte | TAst.Str | TAst.Array _ | TAst.Record _ -> raise Unimplemented
     | TAst.ErrorType -> raise UnexpectedErrorType
     end
   | TAst.NEq ->
@@ -99,6 +116,7 @@ let get_binop_insn res_op left_op op right_op op_tp =
     | TAst.Int -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.I64, left_op, right_op))
     | TAst.Bool -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.I1, left_op, right_op))
     | TAst.Void -> raise UnexpectedVoidType
+    | TAst.Byte | TAst.Str | TAst.Array _ | TAst.Record _ -> raise Unimplemented
     | TAst.ErrorType -> raise UnexpectedErrorType
     end
 
@@ -133,8 +151,11 @@ let rec codegen_expr env expr =
   match expr with
   | TAst.Integer {int} -> ([],Ll.I64, Ll.IConst64 int)
   | TAst.Boolean {bool} -> ([], Ll.I1, Ll.BConst bool)
+  | TAst.Nil -> raise Unimplemented
   | TAst.String {str} -> codegen_string env str
+  | TAst.ArrayInitialization{elem_tp; length_expr; tp} -> codegen_array_initialization env elem_tp length_expr tp
   | TAst.RecordInitialization {rec_name; fields; tp} -> codegen_record_initialization env rec_name fields tp
+  | TAst.LengthOf _ -> raise Unimplemented
   | TAst.BinOp {left; op; right; tp} -> codegen_binop env left op right tp
   | TAst.UnOp {op; operand; tp} -> codegen_unop env op operand tp
   | TAst.Lval lvl ->  codegen_lval_expr env lvl
@@ -149,6 +170,20 @@ and codegen_string env str =
   let bitcast = Ll.Bitcast(Ll.Ptr(ll_str_of_length len), Ll.Gid str_lit_sym, ll_array) in
   let bitcast_insn = CfgBuilder.add_insn(Some conv_str_lit_packed_sym, bitcast) in
   ([bitcast_insn], ll_array, Ll.Id conv_str_lit_packed_sym)
+and codegen_array_initialization env elem_tp length_expr tp =
+  let ll_elem_tp = ll_type_of elem_tp in
+  let length_builets, length_expr_ll_tp, length_op = codegen_expr env length_expr in
+  let _ = assert(length_expr_ll_tp = Ll.I64) in
+  let new_env, ptr_sym = Env.insert_ptr_reg env in
+  let ptr_op = Ll.Id ptr_sym in
+  let elem_size = heap_size_of env elem_tp in
+  let new_env2, default_sym = Env.insert_reg new_env (Sym.symbol "default_val") in
+  let default_alloca_insn = CfgBuilder.add_alloca (default_sym, ll_elem_tp) in
+  let store_default_insn = CfgBuilder.add_insn (None, Ll.Store(ll_elem_tp, default_operand_of elem_tp, Ll.Id default_sym)) in
+  let contents = (Ll.Ptr Ll.I8, Ll.Id default_sym) in
+  let call = Ll.Call(ll_array, Ll.Gid (Sym.symbol "allocate_array"), [(Ll.I32, Ll.IConst32 (Int32.of_int elem_size)); (Ll.I64, length_op); contents]) in
+  let mem_allo_insn = CfgBuilder.add_insn (Some ptr_sym, call) in
+  (length_builets @ [default_alloca_insn; store_default_insn; mem_allo_insn], ll_type_of tp, ptr_op )
 and codegen_record_initialization env rec_name field_inits tp =
   (* TODO: refactor this using codegen assignment and codegen lval*)
   let new_env, ptr_sym = Env.insert_ptr_reg env in
@@ -213,17 +248,33 @@ and codegen_lval env = function
     (* let new_env, tmp_sym = Env.insert_tmp_reg env in
     let load_tmp_insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Load (ll_type_of tp, Ll.Id lval_sym)) in *)
     (Ll.Id lval_sym, ll_type_of tp, [])
-  | TAst.Idx _ -> raise Unimplemented
+  | TAst.Idx {arr; index; tp} ->
+    let arr_buildlets, arr_ll_tp, arr_op = codegen_expr env arr in
+    (*TODO assert arr_ll_tp*)
+    let index_buildlets, index_ll_tp, index_op = codegen_expr env index in
+    let _ = assert(index_ll_tp = Ll.I64) in
+    let elem_ll_tp = ll_type_of tp in
+    let new_env, arr_content_ptr_sym = Env.insert_ptr_reg env in
+    (*TODO: check this gep path*)
+    let arr_content_gep_path = [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int 1)] in
+    let arr_content_gep_insn = CfgBuilder.add_insn (Some arr_content_ptr_sym, Ll.Gep (ll_array_raw, arr_op, arr_content_gep_path)) in
+    let _, casted_array_ptr_sym = Env.insert_ptr_reg env in
+    let ptr_ty = Ll.Ptr(Ll.Array (0, Ll.I8)) in
+    let casted_ty = Ll.Ptr(Ll.Array (0, elem_ll_tp)) in
+    let bitcast = Ll.Bitcast(ptr_ty, Ll.Id arr_content_ptr_sym, casted_ty) in
+    let bitcast_insn = CfgBuilder.add_insn(Some casted_array_ptr_sym, bitcast) in
+    let _, arr_elem_ptr_sym = Env.insert_ptr_reg new_env in
+    let arr_elem_gep_path = [index_op] in
+    let arr_elem_gep_insn = CfgBuilder.add_insn (Some arr_elem_ptr_sym, Ll.Gep (elem_ll_tp, Ll.Id casted_array_ptr_sym, arr_elem_gep_path)) in
+    (Ll.Id arr_elem_ptr_sym, elem_ll_tp, arr_buildlets @ index_buildlets @ [arr_content_gep_insn; bitcast_insn; arr_elem_gep_insn])
   | TAst.Fld {record; field; tp} ->
     let rec_insn, rec_ll_tp, rec_op = codegen_expr env record in
-    (* let new_env, tmp_rec_sym = Env.insert_tmp_reg env in
-    let load_rec_insn = CfgBuilder.add_insn (Some tmp_rec_sym, Ll.Load (rec_ll_tp, rec_op)) in *)
     let new_env2, ptr_sym = Env.insert_ptr_reg env in
     (*TODO: implement this path*)
     let raw_tp = ll_type_of ~raw_records:true (type_of_expr record) in
     let gep_path = get_gep_path_of_field env (type_of_expr record) field in
     let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (raw_tp, rec_op, gep_path)) in
-  (Ll.Id ptr_sym, ll_type_of tp, rec_insn @ [gep_insn])
+    (Ll.Id ptr_sym, ll_type_of tp, rec_insn @ [gep_insn])
 and codegen_lval_expr env lvl =
   (* let lvl_insns , ll_typ, lvl_op = codegen_lval env lvl in *)
   let lvl_op, lvl_tp, lvl_insns = codegen_lval env lvl in
@@ -252,10 +303,10 @@ and codegen_call env fname args tp =
   let get_args_op (_, t, o) = (t, o) in
   let args_ops = List.map get_args_op args_code in
   let ret_op = match tp with
-    | TAst.Int | TAst.Bool | TAst.Str | TAst.Record _-> let _, tmp_alias_sym = Env.insert_tmp_reg env in tmp_alias_sym
+    | TAst.Int | TAst.Bool | TAst.Byte | TAst.Str | TAst.Array _ | TAst.Record _-> let _, tmp_alias_sym = Env.insert_tmp_reg env in tmp_alias_sym
     | TAst.Void | TAst.ErrorType -> Sym.symbol "dummy"
   in let call_insn = match tp with
-    | TAst.Int | TAst.Bool | TAst.Str | TAst.Record _ -> CfgBuilder.add_insn (Some ret_op, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
+    | TAst.Int | TAst.Bool | TAst.Byte | TAst.Str | TAst.Array _ | TAst.Record _ -> CfgBuilder.add_insn (Some ret_op, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
     | TAst.Void | TAst.ErrorType -> CfgBuilder.add_insn (None, Ll.Call(ll_ret_tp, Ll.Gid fsym, args_ops))
   in (folded_buildlets @ [call_insn], ll_ret_tp, Ll.Id ret_op)
 and codegen_comma env left right tp =
