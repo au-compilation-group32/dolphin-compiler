@@ -1,0 +1,16 @@
+// Negative test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+int main () {
+  var x = new int[10];
+  var cats = new Animal[10];
+  return 0;
+}
