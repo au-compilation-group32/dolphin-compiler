@@ -9,14 +9,42 @@ exception Unimplemented (* your code should eventually compile without this exce
 exception UnreachableControlFlow
 exception UnexpectedErrorType
 
-let rec typecheck_typ = function
+let rec check_if_typ_exist env = function
+| Ast.Int _ -> ()
+| Ast.Bool _ -> ()
+| Ast.Void _ -> ()
+| Ast.Byte _ -> ()
+| Ast.Str _ -> ()
+| Ast.Array {typ; _} -> check_if_typ_exist env typ
+| Ast.Record {recordname = Ast.RecordName {name; loc}; _} -> 
+  let sym = Sym.symbol name in
+  match Env.lookup_rec_type env sym with
+  | None -> Env.insert_error env (Errors.RecordUndeclared {loc = loc; rname = sym})
+  | Some _ -> ()
+
+let rec typecheck_typ env tp = match tp with
 | Ast.Int _ -> TAst.Int
 | Ast.Bool _ -> TAst.Bool
 | Ast.Void _ -> TAst.Void
 | Ast.Byte _ -> TAst.Byte
 | Ast.Str _ -> TAst.Str
-| Ast.Array {typ; _} -> TAst.Array {typ = typecheck_typ typ}
-| Ast.Record {recordname = Ast.RecordName {name; _}; _} -> TAst.Record {recordname = TAst.RecordName {sym = Sym.symbol name}}
+| Ast.Array {typ; _} ->
+  let _ = check_if_typ_exist env typ in
+  TAst.Array {typ = typecheck_typ env typ}
+| Ast.Record {recordname = Ast.RecordName {name; _}; _} ->
+  let _ = check_if_typ_exist env tp in
+  TAst.Record {recordname = TAst.RecordName {sym = Sym.symbol name}}
+
+let rec infertype_typ = function
+| Ast.Int _ -> TAst.Int
+| Ast.Bool _ -> TAst.Bool
+| Ast.Void _ -> TAst.Void
+| Ast.Byte _ -> TAst.Byte
+| Ast.Str _ -> TAst.Str
+| Ast.Array {typ; _} ->
+  TAst.Array {typ = infertype_typ typ}
+| Ast.Record {recordname = Ast.RecordName {name; _}; _} ->
+  TAst.Record {recordname = TAst.RecordName {sym = Sym.symbol name}}
 
 let typecheck_binop = function
 | Ast.Plus _ -> TAst.Plus
@@ -53,6 +81,28 @@ let get_expected_unop_arg_typ = function
   | Ast.Neg _ -> TAst.Int
   | Ast.Lnot _ -> TAst.Bool
 
+let find_field_opt field_list query_sym =
+  List.find_opt (fun (TAst.RecordField {fieldname= TAst.FieldName{sym}; _}) -> sym = query_sym) field_list
+let find_field_init_opt field_init_list query_field =
+  let TAst.RecordField {fieldname = TAst.FieldName{sym = query_sym}; _} = query_field in 
+  List.find_opt (fun (TAst.RecordFieldInit {fieldname= TAst.FieldName{sym}; _}) -> sym = query_sym) field_init_list 
+(* let reorder_field_init expected_fields field_inits =
+  let opt_res = List.map (find_field_init_opt field_inits) expected_fields in
+  List.filter_map (fun x->x) opt_res *)
+
+let find_missing_field_init expected_fields field_inits =
+  match expected_fields with
+  | None -> []
+  | Some ef -> 
+      let missing_fields = 
+        List.filter
+          (fun query_field ->
+            match find_field_init_opt field_inits query_field with
+            | None -> true
+            | Some _ -> false)
+          ef in
+      List.map (fun (TAst.RecordField{fieldname = TAst.FieldName{sym}; _}) -> sym) missing_fields
+
 (* should return a pair of a typed expression and its inferred type. you can/should use typecheck_expr inside infertype_expr. *)
 let rec infertype_expr env expr =
   match expr with
@@ -71,13 +121,38 @@ let rec infertype_expr env expr =
   | Ast.Comma {left; right; loc} -> infertype_comma env left right loc
 and infertype_array_initialization env elem_tp length_expr loc =
   let typed_length_expr = typecheck_expr env length_expr TAst.Int in
-  let typed_elem_tp = typecheck_typ elem_tp in
+  let typed_elem_tp = typecheck_typ env elem_tp in
   let arr_tp = TAst.Array {typ = typed_elem_tp} in
   (TAst.ArrayInitialization {elem_tp = typed_elem_tp; length_expr = typed_length_expr; tp = arr_tp}, arr_tp, loc)
 and infertype_record_initialization env rec_name fields loc =
-  let Ast.RecordName {name} = rec_name in
-  let typed_rec_name = TAst.RecordName {sym = Sym.symbol name} in
-  let typed_fields_init = List.map (infertype_record_field_init env) fields in
+  let Ast.RecordName {name; loc = rec_name_loc} = rec_name in
+  let rec_name_sym = Sym.symbol name in
+  let expected_fields =
+    match Env.lookup_rec_type env rec_name_sym with
+    | None -> 
+      let _ = Env.insert_error env (Errors.RecordUndeclared {loc = rec_name_loc; rname = rec_name_sym}) in
+      None
+    | Some f -> Some f in
+  let _ =
+    match Env.lookup_reserved_rec env rec_name_sym with
+    | None -> ()
+    | Some _ -> Env.insert_error env (Errors.InitReservedRecord {loc = loc; rname = rec_name_sym}) in
+  let typed_rec_name = TAst.RecordName {sym = rec_name_sym} in
+  let typed_fields_init = List.map (infertype_record_field_init env rec_name_sym expected_fields) fields in
+  let missing_fieldnames = find_missing_field_init expected_fields typed_fields_init in
+  let _ =
+    if List.length missing_fieldnames > 0
+    then Env.insert_error env (Errors.RecordInitMissingFields {loc = loc; field_syms = missing_fieldnames})
+    else () in
+  let initialized_fields =
+    List.map 
+    (fun (TAst.RecordFieldInit {fieldname = TAst.FieldName{sym}; _}) -> sym)
+    typed_fields_init in
+  let duplicated_inits = Sym.find_duplicates initialized_fields in
+  let _ =
+    if List.length duplicated_inits > 0
+    then Env.insert_error env (Errors.RecordDuplicatedFieldnames {loc = loc; rname_sym = rec_name_sym; syms = duplicated_inits})
+    else () in
   let tp = TAst.Record {recordname = typed_rec_name} in
   (TAst.RecordInitialization {rec_name = typed_rec_name; fields = typed_fields_init; tp = tp}, tp, loc)
 and infertype_length_of env expr loc =
@@ -209,11 +284,25 @@ and infertype_comma env left right loc =
   let left_texpr, _, _ = infertype_expr env left in
   let right_texpr, right_tp, _ = infertype_expr env right in
   TAst.Comma {left = left_texpr; right = right_texpr; tp = right_tp}, right_tp, loc
-and infertype_record_field_init env field_init =
-  (*TODO: check for error*)
-  let Ast.RecordFieldInit {fieldname = Ast.FieldName {name}; rhs; loc} = field_init in
-  let typed_fieldname = TAst.FieldName {sym = Sym.symbol name} in
-  let typed_rhs, rhs_tp, rhs_loc = infertype_expr env rhs in
+and infertype_record_field_init env rec_name_sym expected_fields field_init =
+  let Ast.RecordFieldInit {fieldname = Ast.FieldName {name; _}; rhs; loc} = field_init in
+  let fieldname_sym = Sym.symbol name in
+  let typed_fieldname = TAst.FieldName {sym = fieldname_sym} in
+  let typed_rhs, rhs_tp, _ = infertype_expr env rhs in
+  let expected_field =
+    match expected_fields with
+    | None -> None
+    | Some ef ->
+      match find_field_opt ef fieldname_sym with
+      | None ->
+        let _ = Env.insert_error env (Errors.RecordHasNoFieldName {loc = loc; rname = rec_name_sym; fieldname = fieldname_sym}) in
+        None
+      | Some f -> Some f in
+  let _ =
+    match expected_field with
+    | None -> ()
+    | Some TAst.RecordField {typ; _} ->
+      let _ = typecheck_expr env rhs typ in () in
   TAst.RecordFieldInit {fieldname = typed_fieldname; rhs = typed_rhs; tp = rhs_tp}
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
@@ -234,7 +323,7 @@ let typecheck_var_delc env var = match var with
   let stm_tp = match tp with
   | None -> if body_tp = TAst.Void then TAst.ErrorType else body_tp
   | Some t -> 
-    let decl_tp = typecheck_typ t in
+    let decl_tp = typecheck_typ env t in
     match decl_tp with
     | TAst.Int | TAst.Bool | TAst.Str | TAst.Byte | TAst.Record _ | TAst.Array _ ->
       let _ =
@@ -379,11 +468,11 @@ let infertype_param ~reportError env p =
   let Ast.Param{paramname = Ast.Ident{name = name; loc = _}; typ; loc = loc} = p in
   let param_sym = Sym.symbol name in
   let _ =
-    if reportError && typecheck_typ typ = TAst.Void
+    if reportError && typecheck_typ env typ = TAst.Void
     then Env.insert_error env (Errors.FunctionParamInvalidTypeVoid {loc = loc; sym = param_sym})
     else ()
   in
-  TAst.Param {paramname = TAst.Ident{sym = param_sym}; typ = typecheck_typ typ}
+  TAst.Param {paramname = TAst.Ident{sym = param_sym}; typ = typecheck_typ env typ}
 
 let infertype_param_list ~reportError env params = List.map (infertype_param ~reportError:reportError env) params
 
@@ -394,7 +483,7 @@ let rec first_pass_add_toplevel_decl_to_env env td_list =
   | [] -> env
   | h::t -> match h with
     | Ast.RecordDeclaration rd ->
-      let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields = _; loc} = rd in
+      let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields = _; _} = rd in
       let sym = Sym.symbol name in
       let _ =
         match Env.lookup_rec_type env sym with
@@ -406,7 +495,7 @@ let rec first_pass_add_toplevel_decl_to_env env td_list =
     | Ast.FunctionDeclaration fd -> 
       let Ast.FuncDecl{name = Ident{name; loc = fname_loc}; ret_tp; params; body = _; loc = _} = fd in
       let sym = Sym.symbol name in
-      let typed_ret_tp = typecheck_typ ret_tp in
+      let typed_ret_tp = typecheck_typ env ret_tp in
       let typed_params = infertype_param_list ~reportError:true env params in
       let fun_typ = TAst.FunTyp{ret = typed_ret_tp; params = typed_params} in
       let _ = 
@@ -417,17 +506,23 @@ let rec first_pass_add_toplevel_decl_to_env env td_list =
       let new_env = Env.add_fun_to_env env (sym, fun_typ) in
       first_pass_add_toplevel_decl_to_env new_env t
 
-let typecheck_field f =
-  (*TODO: implement error checks*)
-  let Ast.RecordField {fieldname = Ast.FieldName{name; _}; typ; _} = f in
+let typecheck_field ?(reportError=false) env f =
+  let Ast.RecordField {fieldname = Ast.FieldName{name; _}; typ; loc} = f in
   let sym = Sym.symbol name in
-  TAst.RecordField {fieldname = TAst.FieldName{sym = sym}; typ = typecheck_typ typ}
+  let _ =
+    if reportError then
+      match typ with
+      | Ast.Void _ -> Env.insert_error env (Errors.InvalidVoidType {loc = loc; sym = sym})
+      | _ -> ()
+    else () in
+  let tp = if reportError then typecheck_typ env typ else infertype_typ typ in
+  TAst.RecordField {fieldname = TAst.FieldName{sym = sym}; typ = tp}
 
 let typecheck_rec_decl env rd =
-  (*TODO: implement error checks*)
-  let Ast.RecDecl {rec_name = Ast.RecordName {name}; fields; loc} = rd in
-  let typed_name = TAst.RecordName {sym = Sym.symbol name} in
-  let typed_fields = List.map typecheck_field fields in
+  let Ast.RecDecl {rec_name = Ast.RecordName {name; _}; fields; _} = rd in
+  let rec_name_sym = Sym.symbol name in
+  let typed_name = TAst.RecordName {sym = rec_name_sym} in
+  let typed_fields = List.map (typecheck_field env) fields in
   TAst.RecDecl {rec_name = typed_name; fields = typed_fields}
 
 let get_fieldname_sym (Ast.RecordField {fieldname = Ast.FieldName {name; _}; _}) = Sym.symbol name
@@ -437,7 +532,7 @@ let rec second_pass_add_toplevel_decl_to_env env td_list =
   | h::t -> 
     match h with
     | Ast.RecordDeclaration rd ->
-      let Ast.RecDecl{rec_name = RecordName{name; loc = rname_loc}; fields; loc} = rd in
+      let Ast.RecDecl{rec_name = RecordName{name; loc = _}; fields; loc} = rd in
       let recname_sym = Sym.symbol name in
       let fieldname_syms = List.map get_fieldname_sym fields in
       let duplicated_syms = Sym.find_duplicates fieldname_syms in
@@ -446,7 +541,7 @@ let rec second_pass_add_toplevel_decl_to_env env td_list =
         then Env.insert_error env (Errors.RecordDuplicatedFieldnames {loc = loc; rname_sym = recname_sym; syms = duplicated_syms})
         else ()
       in
-      let typed_fields = List.map typecheck_field fields in
+      let typed_fields = List.map (typecheck_field ~reportError:true env) fields in
       let new_env = Env.add_rec_to_env env (recname_sym, typed_fields) in
       second_pass_add_toplevel_decl_to_env new_env t
     | Ast.FunctionDeclaration _ -> second_pass_add_toplevel_decl_to_env env t
@@ -470,13 +565,13 @@ let typecheck_func_decl env fd =
     then Env.insert_error env (Errors.FunctionDuplicatedParamnames {loc = func_decl_loc; fname_sym = func_name_sym; syms = duplicated_syms})
     else ()
   in
-  let decl_fun_tp = TAst.FunTyp{ret = typecheck_typ ret_tp; params = typed_params} in
+  let decl_fun_tp = TAst.FunTyp{ret = typecheck_typ env ret_tp; params = typed_params} in
   let Ast.FuncBody{stms; _} = func_body in
-  let env2 = Env.{env with expected_ret_tp = typecheck_typ ret_tp} in
+  let env2 = Env.{env with expected_ret_tp = typecheck_typ env ret_tp} in
   let env3 = List.fold_left insert_param_to_env env2 typed_params in
   let typed_stms, final_env = typecheck_statement_seq env3 stms in
   let _ =
-    if (typecheck_typ ret_tp) <> TAst.Void && not (Env.has_all_paths_returned final_env)
+    if (typecheck_typ env3 ret_tp) <> TAst.Void && not (Env.has_all_paths_returned final_env)
     then Env.insert_error final_env (Errors.FunctionMissingReturn{loc = func_decl_loc; sym = func_name_sym})
     else () in
   TAst.FuncDecl{name = TAst.Ident {sym = func_name_sym}; fun_tp = decl_fun_tp; body = typed_stms}
@@ -495,12 +590,12 @@ let check_main_func env =
       else()
     | Env.VarTyp _ -> raise UnreachableControlFlow
 
-let typecheck_library_func_param (Ast.Param {paramname = Ast.Ident {name}; typ}) =
+let typecheck_library_func_param (Ast.Param {paramname = Ast.Ident {name; _}; typ; _}) =
   let typed_paramname = TAst.Ident {sym = Sym.symbol name} in
-  TAst.Param {paramname = typed_paramname; typ = typecheck_typ typ}
-let infertype_library_func_sig (Ast.FuncSig {name = Ast.Ident {name}; ret_tp; params; _}) =
+  TAst.Param {paramname = typed_paramname; typ = infertype_typ typ}
+let infertype_library_func_sig (Ast.FuncSig {name = Ast.Ident {name; _}; ret_tp; params; _}) =
   let typed_params = List.map (typecheck_library_func_param) params in
-  let ftp = TAst.FunTyp {ret = typecheck_typ ret_tp; params = typed_params} in
+  let ftp = TAst.FunTyp {ret = infertype_typ ret_tp; params = typed_params} in
   TAst.FuncSig {name = TAst.ident_of_string name; fun_tp = ftp}
 
 let library_records = DlpStdLib.library_records

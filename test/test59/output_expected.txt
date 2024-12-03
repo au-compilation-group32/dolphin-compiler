@@ -1,0 +1,18 @@
+[36m@ 13:7-13[0m: Record socket has already been declared. Duplicated record names are not allowed.
+[36m@ 33:7-21[0m: Record socket_address has already been declared. Duplicated record names are not allowed.
+[36m@ 16:10-17[0m: Undeclared record type Animal2.
+[36m@ 35:2-10[0m: Identifier x has invalid type void.
+[36m@ 20:10-23[0m: Initialization of reserved type stream is illegal.
+[36m@ 21:14-21[0m: Undeclared record type Animal2.
+[36m@ 22:10-23[0m: Some fields are missing: name, legs
+[36m@ 23:10-36[0m: Some fields are missing: legs
+[36m@ 24:10-50[0m: Some fields are missing: legs
+[36m@ 24:10-50[0m: Record Animal has duplicated field names: name.
+[36m@ 25:22-34[0m: Record Animal has no field name nam.
+[36m@ 25:10-45[0m: Some fields are missing: name
+[36m@ 26:29-30[0m: Type mismatch: expected str but found int.
+[36m@ 26:39-44[0m: Type mismatch: expected int but found str.
+[36m@ 27:29-30[0m: Type mismatch: expected str but found int.
+[36m@ 27:10-32[0m: Some fields are missing: legs
+[36m@ 28:10-61[0m: Record Animal has duplicated field names: name.
+[36m@ 29:10-71[0m: Record Animal has duplicated field names: name, legs.

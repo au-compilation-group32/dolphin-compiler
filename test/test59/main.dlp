@@ -1,0 +1,36 @@
+// Positive test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+record socket {}
+
+record Foo {
+  animal: Animal2;
+}
+
+int main () {
+  var x = new stream {};
+  var x = new Animal2 {};
+  var x = new Animal {};
+  var x = new Animal {name = "cat";};
+  var x = new Animal {name = "cat"; name = "cat";};
+  var x = new Animal {nam = "cat"; legs = 4;};
+  var x = new Animal {name = 4; legs = "cat";};
+  var x = new Animal {name = 4;};
+  var x = new Animal {name = "cats"; name = "cat"; legs = 4;};
+  var x = new Animal {name = "cats"; legs = 4; name = "cat"; legs = 4;};
+  return 0;
+}
+
+record socket_address {x:int;}
+record Bar {
+  x: void;
+}

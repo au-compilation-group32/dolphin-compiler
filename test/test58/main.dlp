@@ -34,13 +34,19 @@ int main () {
   print_integer(length_of(x));
 
   var cat: Animal = new Animal {name = "cat"; legs = 4;};
-  var spider = new Animal {name = "spider"; legs = 8;};
   print_string(cat.name);
   print_integer(cat.legs);
   cat.legs = 2;
   print_string(cat.name);
   print_integer(cat.legs);
+
+  var cat = new Animal {legs = 4; name = "cat";};
+  print_string(cat.name);
+  print_integer(cat.legs);
+
+  var spider = new Animal {name = "spider"; legs = 8;};
   print_string(spider.name);
   print_integer(spider.legs);
+
   return 0;
 }

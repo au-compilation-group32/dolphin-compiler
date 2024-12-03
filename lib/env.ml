@@ -12,6 +12,7 @@ type identType =
 
 type environment = {idents : identType Sym.Table.t;
                     rec_names: (TAst.record_field list) Sym.Table.t;
+                    reserved_rec_names: Sym.symbol list;
                     errors : Errors.error list ref;
                     is_inside_loop: bool;
                     expected_ret_tp : TAst.typ;
@@ -32,8 +33,9 @@ let add_stdlib_fun_to_env env fs =
 (* create an initial environment with the given functions defined *)
 let make_env library_records library_functions =
   let recname_table = List.fold_left add_stdlib_rec_to_env Sym.Table.empty library_records in
+  let reserved_rec_names = List.map (fun (TAst.RecDecl{rec_name = TAst.RecordName{sym}; _}) -> sym) library_records in
   let idents_table = List.fold_left add_stdlib_fun_to_env Sym.Table.empty library_functions in
-  {idents = idents_table; rec_names = recname_table; errors = ref []; is_inside_loop = false; expected_ret_tp = TAst.Void; has_all_paths_returned = false}
+  {idents = idents_table; rec_names = recname_table; reserved_rec_names = reserved_rec_names; errors = ref []; is_inside_loop = false; expected_ret_tp = TAst.Void; has_all_paths_returned = false}
 
 (* insert a local declaration into the environment *)
 let insert_local_decl env sym typ =
@@ -60,3 +62,7 @@ let has_all_paths_returned {has_all_paths_returned; _} = has_all_paths_returned
 let lookup_rec_type env sym =
   let {rec_names; _} = env in
   Sym.Table.find_opt sym rec_names
+
+let lookup_reserved_rec env sym =
+  let {reserved_rec_names; _} = env in
+  List.find_opt (fun s -> s = sym) reserved_rec_names

@@ -16,18 +16,22 @@ let reserved_record_names =
   [
     (Sym.symbol "array_type", Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]);
     (Sym.symbol "stream", Ll.Struct []);
-    (* TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "array_type"}; fields = []};
-    TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "stream"}; fields = []}; *)
-    (* TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "socket"}; fields = []};
-    TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "socket_address"}; fields = []};
-    TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "ip_address"}; fields = []};
-    TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "ip_version"}; fields = []};
-    TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "connection_type"}; fields = []};
-    TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "accepted_connection"}; fields = []};
-    TAst.RecDecl {rec_name = TAst.RecordName {sym = Sym.symbol "udp_recvfrom_result"}; fields = []}; *)
+    (Sym.symbol "socket", Ll.Struct []);
+    (Sym.symbol "socket_address", Ll.Struct []);
+    (Sym.symbol "ip_version", Ll.Struct []);
+    (Sym.symbol "accepted_connection", Ll.Struct []);
+    (Sym.symbol "udp_recvfrom_result", Ll.Struct []);
+    (Sym.symbol "connection_type", Ll.Struct []);
   ]
 
 let library_records =
   [
+    TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "array_type"}; fields = []};
     TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "stream"}; fields = []};
+    TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "socket"}; fields = []};
+    TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "socket_address"}; fields = []};
+    TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "ip_version"}; fields = []};
+    TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "accepted_connection"}; fields = []};
+    TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "udp_recvfrom_result"}; fields = []};
+    TAst.RecDecl {rec_name = TAst.RecordName{sym = Sym.symbol "connection_type"}; fields = []};
   ]

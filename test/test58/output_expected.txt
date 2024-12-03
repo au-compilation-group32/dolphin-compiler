@@ -19,6 +19,8 @@ cat
 4
 cat
 2
+cat
+4
 spider
 8
 return 0
