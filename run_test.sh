@@ -25,7 +25,7 @@ if [ $? -ne 0 ]; then
 else
     echo "Semantics analysis success, compile and run"
     clang runtime/stdlib.c runtime/runtime.c runtime/runtime.h $test_name/dolphin_main.ll
-    ./a.out < $test_name/input.txt > $test_name/output_actual.txt
+    ./a.out < $test_name/input.txt > $test_name/output_actual.txt 2>&1
     echo "return $?" >> $test_name/output_actual.txt
     diff $test_name/output_actual.txt $test_name/output_expected.txt
     if [ $? -ne 0 ]; then

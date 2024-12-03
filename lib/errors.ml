@@ -43,6 +43,7 @@ type error =
 | FieldNotExist of {expr_tp: TAst.typ; sym: Symbol.symbol; loc: Location.location}
 | IndexAccessOfNonArray of {loc: Location.location}
 | LengthOfExprInvalidType of {loc: Location.location; expr_tp: TAst.typ}
+| ArrayInvalidElemTypeVoid of {loc: Location.location}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -79,3 +80,4 @@ let error_to_string err =
   | FieldNotExist {expr_tp; sym; loc} -> Printf.sprintf "%s: %s type has no field name %s." (loc_to_string loc) (TPretty.typ_to_string expr_tp) (Sym.name sym)
   | IndexAccessOfNonArray {loc} -> Printf.sprintf "%s: Index access of non array." (loc_to_string loc)
   | LengthOfExprInvalidType {loc; expr_tp} -> Printf.sprintf "%s: Invalid type %s for length_of expression, expect string or array." (loc_to_string loc) (TPretty.typ_to_string expr_tp)
+  | ArrayInvalidElemTypeVoid {loc} -> Printf.sprintf "%s: Array elements must have non-void type." (loc_to_string loc)

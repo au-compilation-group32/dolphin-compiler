@@ -10,12 +10,6 @@ record Animal {
 }
 
 int main () {
-  var x = new void[10];
-  var x = new int[print_integer(0)];
-  var x = new int[false];
-  var x = new int[10];
-  x[3] = "cat";
-
-  var cats = new Animal2[10];
+  var x = new int[-10];
   return 0;
 }

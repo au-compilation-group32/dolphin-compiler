@@ -1,24 +1,5 @@
-10
-0
-0
-0
-0
-0
-0
-0
-0
-0
-0
-419
-421
-0
-0
-0
-421
-0
-0
-0
-0
-0
-0
-return 0
+[36m@ 13:14-18[0m: Array elements must have non-void type.
+[36m@ 14:18-34[0m: Type mismatch: expected int but found void.
+[36m@ 15:18-23[0m: Type mismatch: expected int but found bool.
+[36m@ 17:2-14[0m: Type mismatch: expected int but found str.
+[36m@ 19:17-24[0m: Undeclared record type Animal2.

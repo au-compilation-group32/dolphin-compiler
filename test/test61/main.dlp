@@ -1,0 +1,27 @@
+// Positive array test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+int main () {
+  var x = new int[10];
+  print_integer(length_of(x));
+  for (var i = 0; i<10; i=i+1) {
+    print_integer(x[i]);
+  }
+  x[3] = 419;
+  print_integer(x[3]);
+  x[3] = x[3] + 2;
+  print_integer(x[3]);
+  for (var i = 0; i<10; i=i+1) {
+    print_integer(x[i]);
+  }
+  //var cats = new Animal[10];
+  return 0;
+}

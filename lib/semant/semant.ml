@@ -120,6 +120,10 @@ let rec infertype_expr env expr =
   | Ast.Call {fname; args; loc} -> infertype_call env fname args loc
   | Ast.Comma {left; right; loc} -> infertype_comma env left right loc
 and infertype_array_initialization env elem_tp length_expr loc =
+  let _ =
+    match elem_tp with
+    | Ast.Void {loc = void_loc} -> Env.insert_error env (Errors.ArrayInvalidElemTypeVoid {loc = void_loc})
+    | _ -> () in
   let typed_length_expr = typecheck_expr env length_expr TAst.Int in
   let typed_elem_tp = typecheck_typ env elem_tp in
   let arr_tp = TAst.Array {typ = typed_elem_tp} in
