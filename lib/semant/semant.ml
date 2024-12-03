@@ -124,12 +124,6 @@ and infertype_assignment env lvl rhs loc =
       let err = Errors.TypeMismatch {loc = loc; expected = lvl_tp; actual = rhs_tp} in 
       let _ = Env.insert_error env err in lvl_tp in
   (TAst.Assignment{lvl = lvl_texpr; rhs = rhs_texpr; tp = asgn_tp}, asgn_tp, loc)
-  (* in match lvl with
-  | Ast.Var Ast.Ident {name; loc=_} ->
-    (TAst.Assignment {lvl = TAst.Var {ident = TAst.Ident {sym = Sym.symbol name}; tp = lvl_tp}; rhs = rhs_texpr; tp = asgn_tp}, asgn_tp, loc)
-  | Ast.Idx _ -> raise Unimplemented
-  | Ast.Fld {record; field; loc} ->
-    raise Unimplemented *)
 and infertype_lval_expr env lvl =
   let typed_lvl, lvl_tp, lvl_loc = infertype_lval env lvl in
   (TAst.Lval typed_lvl, lvl_tp, lvl_loc)

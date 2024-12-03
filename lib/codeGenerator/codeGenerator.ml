@@ -177,7 +177,7 @@ and codegen_array_initialization env elem_tp length_expr tp =
   let new_env, ptr_sym = Env.insert_ptr_reg env in
   let ptr_op = Ll.Id ptr_sym in
   let elem_size = heap_size_of env elem_tp in
-  let new_env2, default_sym = Env.insert_reg new_env (Sym.symbol "default_val") in
+  let _, default_sym = Env.insert_reg new_env (Sym.symbol "default_val") in
   let default_alloca_insn = CfgBuilder.add_alloca (default_sym, ll_elem_tp) in
   let store_default_insn = CfgBuilder.add_insn (None, Ll.Store(ll_elem_tp, default_operand_of elem_tp, Ll.Id default_sym)) in
   let contents = (Ll.Ptr Ll.I8, Ll.Id default_sym) in
@@ -253,8 +253,6 @@ and codegen_lval env = function
   | TAst.Var {ident; tp} ->
     let TAst.Ident {sym} = ident in
     let lval_sym = Env.get_alias_sym env sym in
-    (* let new_env, tmp_sym = Env.insert_tmp_reg env in
-    let load_tmp_insn = CfgBuilder.add_insn (Some tmp_sym, Ll.Load (ll_type_of tp, Ll.Id lval_sym)) in *)
     (Ll.Id lval_sym, ll_type_of tp, [])
   | TAst.Idx {arr; index; tp} ->
     let arr_buildlets, arr_ll_tp, arr_op = codegen_expr env arr in
@@ -277,30 +275,16 @@ and codegen_lval env = function
     (Ll.Id arr_elem_ptr_sym, elem_ll_tp, arr_buildlets @ index_buildlets @ [arr_content_gep_insn; bitcast_insn; arr_elem_gep_insn])
   | TAst.Fld {record; field; tp} ->
     let rec_insn, rec_ll_tp, rec_op = codegen_expr env record in
-    let new_env2, ptr_sym = Env.insert_ptr_reg env in
-    (*TODO: implement this path*)
+    let _, ptr_sym = Env.insert_ptr_reg env in
     let raw_tp = ll_type_of ~raw_records:true (type_of_expr record) in
     let gep_path = get_gep_path_of_field env (type_of_expr record) field in
     let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (raw_tp, rec_op, gep_path)) in
     (Ll.Id ptr_sym, ll_type_of tp, rec_insn @ [gep_insn])
 and codegen_lval_expr env lvl =
-  (* let lvl_insns , ll_typ, lvl_op = codegen_lval env lvl in *)
   let lvl_op, lvl_tp, lvl_insns = codegen_lval env lvl in
-  (* let ll_typ = ll_type_of tp in *)
   let _, tmp_alias_sym = Env.insert_tmp_reg env in
   let tmp_load_insn = CfgBuilder.add_insn (Some tmp_alias_sym, Ll.Load(lvl_tp, lvl_op)) in
   (lvl_insns @ [tmp_load_insn], lvl_tp, Ll.Id tmp_alias_sym)
-(* and codegen_lval env lvl =
-  match lvl with
-  | TAst.Var {ident; tp} ->
-    let lvl_op, lvl_insns = ptr_operand_of_lval env lvl in
-    let ll_typ = ll_type_of tp in
-    ([], ll_typ, lvl_op)
-  | TAst.Idx _ -> raise Unimplemented
-  | TAst.Fld {record; field; tp} ->
-    let lvl_op, lvl_insns = ptr_operand_of_lval env lvl in
-    let ll_typ = ll_type_of tp in
-    (lvl_insns, ll_typ, lvl_op) *)
 and codegen_call env fname args tp =
   let TAst.Ident {sym = fsym} = fname in
   let ll_ret_tp = ll_type_of tp in

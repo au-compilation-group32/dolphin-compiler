@@ -18,9 +18,6 @@ type environment = {idents : identType Sym.Table.t;
                     has_all_paths_returned: bool}
 
 let add_rec_to_env env (rsym, body) = {env with rec_names = (Sym.Table.add rsym body env.rec_names)}
-(* let update_rec_to_env env (rsym, body) = 
-  let env2 = {env with rec_names = (Sym.Table.remove rsym env.rec_names)} in
-  {env2 with rec_names = (Sym.Table.add rsym body env2.rec_names)} *)
 
 let add_stdlib_rec_to_env env rd =
   let TAst.RecDecl {rec_name = TAst.RecordName{sym}; fields} = rd in

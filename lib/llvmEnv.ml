@@ -61,11 +61,11 @@ let rec lookup_aux lst sym =
     if h_real = sym then h_alias else lookup_aux t sym
 
 let get_alias_sym (env:llvmEnvironment) sym =
-  let {regs; counter=_; is_inside_loop=_} = env in
+  let {regs; _} = env in
   lookup_aux regs sym
 
 let get_loop_sym env  =
-  let {regs=_; counter=_; is_inside_loop: is_inside_type option} = env in
+  let {is_inside_loop; _} = env in
   match is_inside_loop with
   | None -> let x: is_inside_type option= None in x
   | Some {conti; brea} -> let x = Some {conti = conti; brea = brea} in x
@@ -92,8 +92,6 @@ let insert_str_lit_reg env str =
   | None -> 
     let str_lit_sym = Sym.symbol "str_lit" in
     let new_env, alias_str_lit_sym = insert_reg env str_lit_sym in
-    (* let conv_str_lit_packed_sym = Sym.symbol "conv_str_lit_packed" in *)
-    (* let new_env, alias_conv_str_lit_packed_sym = insert_reg new_env conv_str_lit_packed_sym in *)
     let {str_lits; _} = new_env in
     let _ = str_lits := (str, alias_str_lit_sym)::!str_lits in
     new_env, alias_str_lit_sym
