@@ -40,7 +40,7 @@ type expr =
 | String of {str: string; loc : Loc.location}
 | ArrayInitialization of {elem_tp: typ; length_expr: expr; loc: Loc.location}
 | RecordInitialization of {rec_name: recordname; fields: record_field_init list; loc: Loc.location}
-| LengthOf of {ident: ident; loc: Loc.location}
+| LengthOf of {expr: expr; loc: Loc.location}
 | BinOp of {left : expr; op : binop; right : expr; loc : Loc.location}
 | UnOp of {op : unop; operand : expr; loc : Loc.location}
 | Lval of lval

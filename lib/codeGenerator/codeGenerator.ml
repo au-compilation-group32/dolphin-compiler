@@ -155,7 +155,7 @@ let rec codegen_expr env expr =
   | TAst.String {str} -> codegen_string env str
   | TAst.ArrayInitialization{elem_tp; length_expr; tp} -> codegen_array_initialization env elem_tp length_expr tp
   | TAst.RecordInitialization {rec_name; fields; tp} -> codegen_record_initialization env rec_name fields tp
-  | TAst.LengthOf _ -> raise Unimplemented
+  | TAst.LengthOf {expr} -> codegen_length_of env expr
   | TAst.BinOp {left; op; right; tp} -> codegen_binop env left op right tp
   | TAst.UnOp {op; operand; tp} -> codegen_unop env op operand tp
   | TAst.Lval lvl ->  codegen_lval_expr env lvl
@@ -210,6 +210,14 @@ and codegen_record_field_init env rec_tp rec_ptr field_init =
   let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (raw_tp, rec_ptr, gep_path)) in
   let load_insn = CfgBuilder.add_insn (None, Ll.Store(rhs_tp, rhs_op, Ll.Id ptr_sym)) in
   rhs_buildlets @ [gep_insn; load_insn]
+and codegen_length_of env expr =
+  let expr_buildlets, _, expr_op = codegen_expr env expr in
+  let _, ptr_sym = Env.insert_tmp_reg env in
+  let gep_path = [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int 0)] in
+  let gep_insn = CfgBuilder.add_insn (Some ptr_sym, Ll.Gep (ll_array_raw, expr_op, gep_path)) in
+  let _, length_sym = Env.insert_tmp_reg env in
+  let load_insn = CfgBuilder.add_insn (Some length_sym, Ll.Load(Ll.I64, Ll.Id ptr_sym)) in
+  (expr_buildlets @ [gep_insn; load_insn], Ll.I64, Ll.Id length_sym)
 and codegen_binop env left op right tp =
   let ll_tp = ll_type_of tp in
   let left_buildlets, left_tp, left_op = codegen_expr env left in

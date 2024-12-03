@@ -13,18 +13,25 @@ record Animal {
 int main () {
   var x = "HelloWorld";
   print_string(x);
+  print_integer(length_of(x));
   x = "HelloWorld";
   print_string(x);
+  print_integer(length_of(x));
   x = "Hello World";
   print_string(x);
+  print_integer(length_of(x));
   x = "Hello World\n";
   print_string(x);
+  print_integer(length_of(x));
   x = "Hello World\n";
   print_string(x);
+  print_integer(length_of(x));
   x = "Hello\tWorld";
   print_string(x);
+  print_integer(length_of(x));
   x = "Hello\tWorld\n";
   print_string(x);
+  print_integer(length_of(x));
 
   var cat: Animal = new Animal {name = "cat"; legs = 4;};
   var spider = new Animal {name = "spider"; legs = 8;};

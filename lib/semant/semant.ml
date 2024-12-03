@@ -62,7 +62,7 @@ let rec infertype_expr env expr =
   | Ast.String {str; loc} -> (TAst.String {str}, TAst.Str, loc)
   | Ast.ArrayInitialization {elem_tp; length_expr; loc} -> infertype_array_initialization env elem_tp length_expr loc
   | Ast.RecordInitialization {rec_name; fields; loc} -> infertype_record_initialization env rec_name fields loc
-  | Ast.LengthOf {ident; loc} -> raise Unimplemented
+  | Ast.LengthOf {expr; loc} -> infertype_length_of env expr loc
   | Ast.BinOp {left; op; right; loc} -> infertype_binop env left op right loc
   | Ast.UnOp {op; operand; loc} -> infertype_unop env op operand loc
   | Ast.Lval lvl -> infertype_lval_expr env lvl
@@ -80,6 +80,13 @@ and infertype_record_initialization env rec_name fields loc =
   let typed_fields_init = List.map (infertype_record_field_init env) fields in
   let tp = TAst.Record {recordname = typed_rec_name} in
   (TAst.RecordInitialization {rec_name = typed_rec_name; fields = typed_fields_init; tp = tp}, tp, loc)
+and infertype_length_of env expr loc =
+  let typed_expr, expr_tp, expr_loc = infertype_expr env expr in
+  let _ =
+    match expr_tp with
+    | TAst.Str | TAst.Array _ | TAst.ErrorType -> ()
+    | _ -> Env.insert_error env (Errors.LengthOfExprInvalidType {loc = loc; expr_tp = expr_tp}) in
+  (TAst.LengthOf {expr = typed_expr}, TAst.Int, loc)
 and infertype_binop env left op right loc =
     match op with
     | Plus _ | Minus _ | Mul _ | Div _ | Rem _ | Lt _ | Le _ | Gt _ | Ge _ | Lor _ | Land _ -> 

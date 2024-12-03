@@ -64,6 +64,7 @@ let rec expr_to_tree e =
     PBox.tree (Pretty.make_info_node_line "RecordInit")
       [PBox.hlist ~bars:false [Pretty.make_info_node_line "RecName: "; recordname_to_tree rec_name];
         PBox.tree (Pretty.make_info_node_line "Fields") (List.map (fun fi -> record_field_init_to_tree fi) fields)]
+  | LengthOf {expr; _} -> PBox.tree (Pretty.make_info_node_line "LengthOf") [expr_to_tree expr]
   | BinOp {left; op; right; tp; _} -> PBox.tree (Pretty.make_info_node_line "BinOp") [typ_to_tree tp; expr_to_tree left; binop_to_tree op; expr_to_tree right]
   | UnOp {op; operand; tp; _} -> PBox.tree (Pretty.make_info_node_line "UnOp") [typ_to_tree tp; unop_to_tree op; expr_to_tree operand]
   | Lval l -> PBox.tree (Pretty.make_info_node_line "Lval") [lval_to_tree l]
