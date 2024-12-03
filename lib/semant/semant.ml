@@ -81,7 +81,7 @@ and infertype_record_initialization env rec_name fields loc =
   let tp = TAst.Record {recordname = typed_rec_name} in
   (TAst.RecordInitialization {rec_name = typed_rec_name; fields = typed_fields_init; tp = tp}, tp, loc)
 and infertype_length_of env expr loc =
-  let typed_expr, expr_tp, expr_loc = infertype_expr env expr in
+  let typed_expr, expr_tp, _ = infertype_expr env expr in
   let _ =
     match expr_tp with
     | TAst.Str | TAst.Array _ | TAst.ErrorType -> ()

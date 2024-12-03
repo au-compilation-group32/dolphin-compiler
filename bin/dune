@@ -5,4 +5,4 @@
 (executable
  (name compile)
  (public_name dolphin_compiler.compile)
- (libraries lib srcProcessor))
+ (libraries lib srcProcessor semant codeGenerator))

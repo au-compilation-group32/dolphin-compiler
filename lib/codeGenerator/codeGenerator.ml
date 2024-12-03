@@ -184,10 +184,9 @@ and codegen_array_initialization env elem_tp length_expr tp =
   let call = Ll.Call(ll_array, Ll.Gid (Sym.symbol "allocate_array"), [(Ll.I32, Ll.IConst32 (Int32.of_int elem_size)); (Ll.I64, length_op); contents]) in
   let mem_allo_insn = CfgBuilder.add_insn (Some ptr_sym, call) in
   (length_builets @ [default_alloca_insn; store_default_insn; mem_allo_insn], ll_type_of tp, ptr_op )
-and codegen_record_initialization env rec_name field_inits tp =
+and codegen_record_initialization env _ field_inits tp =
   (* TODO: refactor this using codegen assignment and codegen lval*)
   let new_env, ptr_sym = Env.insert_ptr_reg env in
-  let ptr_op = Ll.Id ptr_sym in
   let ptr_ty = Ll.Ptr Ll.I8 in
   let mem_size = heap_size_of new_env tp in
   let call = Ll.Call(ptr_ty, Ll.Gid (Sym.symbol "allocate_record"), [Ll.I32, Ll.IConst32 (Int32.of_int mem_size)]) in
@@ -197,8 +196,8 @@ and codegen_record_initialization env rec_name field_inits tp =
   let casted_ty = ll_type_of tp in
   let bitcast = Ll.Bitcast(ptr_ty, Ll.Id ptr_sym, casted_ty) in
   let bitcast_insn = CfgBuilder.add_insn(Some casted_ptr_sym, bitcast) in
-  let TAst.RecordName {sym = rec_name_sym} = rec_name in
-  let fields = Env.lookup_rec_type new_env2 rec_name_sym in
+  (* let TAst.RecordName {sym = rec_name_sym} = rec_name in
+  let fields = Env.lookup_rec_type new_env2 rec_name_sym in *)
   let init_insns = List.fold_left ( @ ) [] (List.map (codegen_record_field_init new_env2 tp casted_ptr_op) field_inits) in 
   ([mem_allo_insn; bitcast_insn] @ init_insns, casted_ty, casted_ptr_op)
 and codegen_record_field_init env rec_tp rec_ptr field_init =
@@ -247,6 +246,7 @@ and codegen_assignment env lvl rhs tp =
   let rhs_buildlets, rhs_tp, rhs_op = codegen_expr env rhs in
   let _ = assert (rhs_tp = ll_type_of tp) in
   let lvl_op, lvl_tp, lvl_insns = codegen_lval env lvl in
+  let _ = assert (lvl_tp = ll_type_of tp) in
   let insn = CfgBuilder.add_insn (None, Ll.Store(rhs_tp, rhs_op, lvl_op)) in
   (lvl_insns @ rhs_buildlets @ [insn], rhs_tp, rhs_op)
 and codegen_lval env = function
@@ -256,7 +256,7 @@ and codegen_lval env = function
     (Ll.Id lval_sym, ll_type_of tp, [])
   | TAst.Idx {arr; index; tp} ->
     let arr_buildlets, arr_ll_tp, arr_op = codegen_expr env arr in
-    (*TODO assert arr_ll_tp*)
+    let _ = assert (arr_ll_tp = ll_array) in
     let index_buildlets, index_ll_tp, index_op = codegen_expr env index in
     let _ = assert(index_ll_tp = Ll.I64) in
     let elem_ll_tp = ll_type_of tp in
@@ -275,6 +275,7 @@ and codegen_lval env = function
     (Ll.Id arr_elem_ptr_sym, elem_ll_tp, arr_buildlets @ index_buildlets @ [arr_content_gep_insn; bitcast_insn; arr_elem_gep_insn])
   | TAst.Fld {record; field; tp} ->
     let rec_insn, rec_ll_tp, rec_op = codegen_expr env record in
+    let _ = assert (rec_ll_tp = ll_type_of ~raw_records:false (type_of_expr record)) in
     let _, ptr_sym = Env.insert_ptr_reg env in
     let raw_tp = ll_type_of ~raw_records:true (type_of_expr record) in
     let gep_path = get_gep_path_of_field env (type_of_expr record) field in
@@ -503,7 +504,7 @@ let codegen_func_decl env fd =
   let ll_ftyp = (ll_param_tys, ll_type_of ret) in
   let builder = CfgBuilder.empty_cfg_builder in
   let params_buildlets, params_uids, env_with_arg = codegen_param_list env params in
-  let body_buildlets, final_env = codegen_statement_seq env_with_arg body in
+  let body_buildlets, _ = codegen_statement_seq env_with_arg body in
   let final_term =
     if ret = TAst.Void
     then CfgBuilder.term_block (Ll.Ret (Ll.Void, None))
@@ -512,7 +513,7 @@ let codegen_func_decl env fd =
   let cfg = CfgBuilder.get_cfg (seq_buildlets builder) in
   let ll_fdecl = Ll.{fty = ll_ftyp; param = params_uids; cfg = cfg} in
   let renamed_fname_sym = if Sym.name fname_sym = "main" then Sym.symbol "dolphin_fun_main" else fname_sym in
-  let Env.{str_lits; _} = final_env in
+  (* let Env.{str_lits; _} = final_env in *)
   (renamed_fname_sym, ll_fdecl)
 
 let codegen_func_sig fs = 
