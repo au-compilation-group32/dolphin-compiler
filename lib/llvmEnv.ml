@@ -19,7 +19,7 @@ type llvmEnvironment = {
 }
 
 (* create an initial environment with the given functions defined *)
-let make_empty_env rec_names = {regs = []; rec_names = rec_names; str_lits = ref []; counter = ref 0; is_inside_loop = None}
+let make_empty_env rec_names = {regs = []; rec_names = rec_names; str_lits = ref [("", Sym.symbol "empty_string")]; counter = ref 0; is_inside_loop = None}
 
 let insert_reg env sym =
   let {regs; counter; _} = env in

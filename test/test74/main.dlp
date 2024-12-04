@@ -1,0 +1,23 @@
+// Default string value test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+int main () {
+  var x: [string] = new string[10];
+  //x[0] = "";
+  //print_integer(length_of(x[0]));
+  //print_string(x[0]);
+  //x[1] = "foo";
+  print_integer(length_of(x[1]));
+  print_string(x[1]);
+
+  return 0;
+}

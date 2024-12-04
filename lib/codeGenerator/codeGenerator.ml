@@ -74,7 +74,7 @@ let default_operand_of = function
   | TAst.Bool -> Ll.BConst false
   | TAst.Void -> raise UnexpectedControlFlow
   | TAst.Byte -> Ll.IConst8 '\000'
-  | TAst.Str -> raise Unimplemented
+  | TAst.Str -> raise UnexpectedControlFlow
   | TAst.Array _ -> Ll.Null
   | TAst.Record _ -> Ll.Null
   | TAst.Nil -> Ll.Null
@@ -186,11 +186,20 @@ and codegen_array_initialization env elem_tp length_expr tp =
   let elem_size = heap_size_of env elem_tp in
   let _, default_sym = Env.insert_reg new_env (Sym.symbol "default_val") in
   let default_alloca_insn = CfgBuilder.add_alloca (default_sym, ll_elem_tp) in
-  let store_default_insn = CfgBuilder.add_insn (None, Ll.Store(ll_elem_tp, default_operand_of elem_tp, Ll.Id default_sym)) in
+  let default_insns =
+    if elem_tp = TAst.Str then
+      let _, conv_str_lit_packed_sym = Env.insert_conv_reg env in 
+      let bitcast = Ll.Bitcast(Ll.Ptr(ll_str_of_length 0), Ll.Gid (Sym.symbol "empty_string"), ll_array) in
+      let bitcast_insn = CfgBuilder.add_insn(Some conv_str_lit_packed_sym, bitcast) in
+      let store_default_insn = CfgBuilder.add_insn (None, Ll.Store(ll_elem_tp, Ll.Id conv_str_lit_packed_sym, Ll.Id default_sym)) in
+      [bitcast_insn; store_default_insn]
+    else 
+      let store_default_insn = CfgBuilder.add_insn (None, Ll.Store(ll_elem_tp, default_operand_of elem_tp, Ll.Id default_sym)) in
+      [store_default_insn] in
   let contents = (Ll.Ptr Ll.I8, Ll.Id default_sym) in
   let call = Ll.Call(ll_array, Ll.Gid (Sym.symbol "allocate_array"), [(Ll.I32, Ll.IConst32 (Int32.of_int elem_size)); (Ll.I64, length_op); contents]) in
   let mem_allo_insn = CfgBuilder.add_insn (Some ptr_sym, call) in
-  (length_builets @ [default_alloca_insn; store_default_insn; mem_allo_insn], ll_type_of tp, ptr_op )
+  (length_builets @ [default_alloca_insn] @ default_insns @ [mem_allo_insn], ll_type_of tp, ptr_op )
 and codegen_record_initialization env _ field_inits tp =
   (* TODO: refactor this using codegen assignment and codegen lval*)
   let new_env, ptr_sym = Env.insert_ptr_reg env in
