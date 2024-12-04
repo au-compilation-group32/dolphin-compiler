@@ -546,7 +546,6 @@ let filter_func_decl tprog =
   ) tprog
 
 let codegen_prog tprog reg_names =
-  let open Sym in
   let open Ll in
   let env = Env.make_empty_env reg_names in
   let rdecls = List.map (codegen_rec_decl ) (filter_rec_decl tprog) in

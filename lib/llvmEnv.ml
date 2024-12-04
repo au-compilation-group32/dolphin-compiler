@@ -83,7 +83,7 @@ let rec lookup_str_lit_aux lst str =
     let (s, sym) = h in
     if s = str then Some(sym) else lookup_str_lit_aux t str
 
-let rec lookup_str_lit env str =
+let lookup_str_lit env str =
   let {str_lits; _} = env in
   lookup_str_lit_aux !str_lits str
 

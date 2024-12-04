@@ -1,5 +1,4 @@
 (library
  (name lib)
  (libraries printbox printbox-text)
- (flags (:standard -warn-error -A))
 )

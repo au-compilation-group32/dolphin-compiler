@@ -1,4 +1,3 @@
 (library
  (name semant)
- (flags (:standard -warn-error -A))
  (libraries lib srcProcessor dlpStdLib))

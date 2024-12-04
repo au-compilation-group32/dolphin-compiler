@@ -2,14 +2,13 @@ module Sym = Symbol
 module PBox = PrintBox
 open TypedAst
 
-let typ_to_string = function
+let rec typ_to_string = function
 | Void -> "void"
 | Int -> "int"
 | Bool -> "bool"
-| Byte _ -> "byte"
-| Str _ -> "str"
-(*TODO: fix this array name*)
-| Array {typ; _} -> "array"
+| Byte  -> "byte"
+| Str  -> "str"
+| Array {typ; _} -> "[" ^ (typ_to_string typ) ^ "]"
 | Record {recordname = TypedAst.RecordName {sym; _}; _} -> Sym.name sym
 | ErrorType -> "'type error'"
 
@@ -18,15 +17,14 @@ let ident_to_tree (Ident {sym}) = Pretty.make_ident_line (Sym.name sym)
 let fieldname_to_tree (FieldName {sym}) = Pretty.make_ident_line (Sym.name sym)
 let recordname_to_tree (RecordName {sym}) = Pretty.make_ident_line (Sym.name sym)
 
-let typ_to_tree tp =
+let rec typ_to_tree tp =
   match tp with
   | Void -> Pretty.make_typ_line "Void"
   | Int -> Pretty.make_typ_line "Int"
   | Bool -> Pretty.make_typ_line "Bool"
   | Byte -> Pretty.make_typ_line "Byte"
   | Str -> Pretty.make_typ_line "Str"
-  (*TODO: fix this array name*)
-  | Array {typ;} -> Pretty.make_typ_line "Array"
+  | Array {typ; _} -> PBox.hlist ~bars:false [Pretty.make_typ_line "["; typ_to_tree typ;Pretty.make_typ_line "]"] 
   | Record {recordname = RecordName {sym; _}; _} -> Pretty.make_typ_line (Sym.name sym)
   | ErrorType -> PBox.line_with_style (PBox.Style.set_bg_color PBox.Style.Red PBox.Style.default) "ErrorType"
 
@@ -56,6 +54,7 @@ let rec expr_to_tree e =
   | Integer {int; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "IntLit("; PBox.line (Int64.to_string int); Pretty.make_info_node_line ")"]
   | Boolean {bool; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "BooleanLit("; Pretty.make_keyword_line (if bool then "true" else "false"); Pretty.make_info_node_line ")"]
   | String {str; _} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "StringLit("; PBox.line (String.escaped str); Pretty.make_info_node_line ")"]
+  | Nil -> PBox.hlist ~bars:false [Pretty.make_info_node_line "Nil"]
   | ArrayInitialization {elem_tp; length_expr; _} ->
     PBox.tree (Pretty.make_info_node_line "ArrayInit")
       [PBox.hlist ~bars:false [Pretty.make_info_node_line "ElemType: "; typ_to_tree elem_tp];

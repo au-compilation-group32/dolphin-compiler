@@ -22,15 +22,14 @@ let ident_to_tree (Ident {name; _}) = make_ident_line name
 let fieldname_to_tree (FieldName {name; _}) = make_fieldname_line name
 let recordname_to_tree (RecordName {name; _}) = make_recordname_line name
 
-let typ_to_tree tp =
+let rec typ_to_tree tp =
   match tp with
   | Bool _ -> make_typ_line "Bool"
   | Int _ -> make_typ_line "Int"
   | Void _ -> make_typ_line "Void"
   | Byte _ -> make_typ_line "Byte"
   | Str _ -> make_typ_line "Str"
-  (*TODO: fix this array name*)
-  | Array {typ; _} -> make_typ_line "Array"
+  | Array {typ; _} -> PBox.hlist ~bars:false [make_typ_line "["; typ_to_tree typ;make_typ_line "]"] 
   | Record {recordname = RecordName {name; _}; _} -> make_typ_line name
 
 let binop_to_tree op =
@@ -59,6 +58,7 @@ let rec expr_to_tree e =
   | Integer {int; _} -> PBox.hlist ~bars:false [make_info_node_line "IntLit("; PBox.line (Int64.to_string int); make_info_node_line ")"]
   | Boolean {bool; _} -> PBox.hlist ~bars:false [make_info_node_line "BooleanLit("; make_keyword_line (if bool then "true" else "false"); make_info_node_line ")"]
   | String {str; _} -> PBox.hlist ~bars:false [make_info_node_line "StringLit("; PBox.line (String.escaped str); make_info_node_line ")"]
+  | Nil _ -> PBox.hlist ~bars:false [make_info_node_line "Nil"]
   | ArrayInitialization {elem_tp; length_expr; _} ->
     PBox.tree (make_info_node_line "ArrayInit")
       [PBox.hlist ~bars:false [make_info_node_line "ElemType: "; typ_to_tree elem_tp];

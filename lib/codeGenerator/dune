@@ -1,4 +1,3 @@
 (library
  (name codeGenerator)
- (flags (:standard -warn-error -A))
  (libraries lib dlpStdLib semant))

@@ -108,7 +108,7 @@ let rec infertype_expr env expr =
   match expr with
   | Ast.Integer {int; loc} -> (TAst.Integer {int}, TAst.Int, loc)
   | Ast.Boolean {bool; loc} -> (TAst.Boolean {bool}, TAst.Bool, loc)
-  | Ast.Nil {loc} -> raise Unimplemented
+  | Ast.Nil _ -> raise Unimplemented
   | Ast.String {str; loc} -> (TAst.String {str}, TAst.Str, loc)
   | Ast.ArrayInitialization {elem_tp; length_expr; loc} -> infertype_array_initialization env elem_tp length_expr loc
   | Ast.RecordInitialization {rec_name; fields; loc} -> infertype_record_initialization env rec_name fields loc
