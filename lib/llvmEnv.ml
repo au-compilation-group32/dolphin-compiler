@@ -32,6 +32,7 @@ let insert_tmp_reg env =
   let new_env, alias_sym = insert_reg env tmp_sym in
   new_env, alias_sym
 
+let insert_reg_with_txt env s = insert_reg env (Sym.symbol s)
 let insert_ptr_reg env = 
   let tmp_sym = Sym.symbol "ptr" in
   let new_env, alias_sym = insert_reg env tmp_sym in

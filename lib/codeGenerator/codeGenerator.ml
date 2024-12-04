@@ -269,6 +269,32 @@ and codegen_lval env = function
     let _ = assert (arr_ll_tp = ll_array) in
     let index_buildlets, index_ll_tp, index_op = codegen_expr env index in
     let _ = assert(index_ll_tp = Ll.I64) in
+
+    let _, arr_len_ptr_sym = Env.insert_reg_with_txt env "arr_length_ptr" in
+    let arr_len_gep_path = [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int 0)] in
+    let arr_len_gep_insn = CfgBuilder.add_insn (Some arr_len_ptr_sym, Ll.Gep (ll_array_raw, arr_op, arr_len_gep_path)) in
+    let _, arr_len_sym = Env.insert_reg_with_txt env "arr_length" in
+    let load_len_insn = CfgBuilder.add_insn (Some arr_len_sym, Ll.Load(Ll.I64, Ll.Id arr_len_ptr_sym)) in
+
+    let _, upper_bound_icmp_sym = Env.insert_reg_with_txt env "upper_bound_icmp" in
+    let _, lower_bound_icmp_sym = Env.insert_reg_with_txt env "lower_bound_icmp" in
+    let _, lower_bound_check_label_sym = Env.insert_reg_with_txt env "lower_bound_check_label" in
+    let _, out_of_bound_err_label_sym = Env.insert_reg_with_txt env "out_of_bound_err_label" in
+    let _, no_bound_err_label_sym = Env.insert_reg_with_txt env "no_out_of_bound_err_label" in
+
+    let upper_bound_icmp_insn = CfgBuilder.add_insn(Some upper_bound_icmp_sym, Ll.Icmp(Ll.Sge, Ll.I64, index_op, Ll.Id arr_len_sym)) in
+    let term_blk_upper_bound = CfgBuilder.term_block(Ll.Cbr (Ll.Id upper_bound_icmp_sym, out_of_bound_err_label_sym, lower_bound_check_label_sym)) in
+    let start_blk_lower_bound = CfgBuilder.start_block(lower_bound_check_label_sym) in
+
+    let lower_bound_icmp_insn = CfgBuilder.add_insn(Some lower_bound_icmp_sym, Ll.Icmp(Ll.Slt, Ll.I64, index_op, Ll.IConst64 0L)) in
+    let term_blk_lower_bound = CfgBuilder.term_block(Ll.Cbr (Ll.Id lower_bound_icmp_sym, out_of_bound_err_label_sym, no_bound_err_label_sym)) in
+    let start_blk_oob_err_report = CfgBuilder.start_block(out_of_bound_err_label_sym) in
+    let report_oob_err_insn = CfgBuilder.add_insn (None, Ll.Call(Ll.Ptr Ll.I8, Ll.Gid (Sym.symbol "report_error_array_index_out_of_bounds"), [])) in
+    let term_blk_oob_err_report = CfgBuilder.term_block(Ll.Br (no_bound_err_label_sym)) in
+    let start_blk_no_oob_err = CfgBuilder.start_block(no_bound_err_label_sym) in
+    let bound_check_buildlets = [arr_len_gep_insn; load_len_insn; upper_bound_icmp_insn; term_blk_upper_bound;
+                                  start_blk_lower_bound; lower_bound_icmp_insn; term_blk_lower_bound; 
+                                  start_blk_oob_err_report; report_oob_err_insn; term_blk_oob_err_report; start_blk_no_oob_err] in
     let elem_ll_tp = ll_type_of tp in
     let new_env, arr_content_ptr_sym = Env.insert_ptr_reg env in
     let arr_content_gep_path = [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int 1)] in
@@ -281,7 +307,7 @@ and codegen_lval env = function
     let _, arr_elem_ptr_sym = Env.insert_ptr_reg new_env in
     let arr_elem_gep_path = [index_op] in
     let arr_elem_gep_insn = CfgBuilder.add_insn (Some arr_elem_ptr_sym, Ll.Gep (elem_ll_tp, Ll.Id casted_array_ptr_sym, arr_elem_gep_path)) in
-    (Ll.Id arr_elem_ptr_sym, elem_ll_tp, arr_buildlets @ index_buildlets @ [arr_content_gep_insn; bitcast_insn; arr_elem_gep_insn])
+    (Ll.Id arr_elem_ptr_sym, elem_ll_tp, arr_buildlets @ index_buildlets @ bound_check_buildlets @ [arr_content_gep_insn; bitcast_insn; arr_elem_gep_insn])
   | TAst.Fld {record; field; tp} ->
     let rec_insn, rec_ll_tp, rec_op = codegen_expr env record in
     let _ = assert (rec_ll_tp = ll_type_of ~raw_records:false (type_of_expr record)) in
