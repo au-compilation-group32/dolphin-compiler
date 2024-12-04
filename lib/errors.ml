@@ -52,6 +52,7 @@ type error =
 | ArrayInvalidElemTypeVoid of {loc: Location.location}
 | VarDeclWithAmbiguousNil of {loc: Location.location}
 | InvalidComparisonWithNil of {loc: Location.location}
+| InvalidNil of {loc: Location.location; typ: TAst.typ}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -92,3 +93,4 @@ let error_to_string err =
   | ArrayInvalidElemTypeVoid {loc} -> Printf.sprintf "%s: Array elements must have non-void type." (loc_to_string loc)
   | VarDeclWithAmbiguousNil {loc} -> Printf.sprintf "%s: Var declaration with ambiguous nil type." (loc_to_string loc)
   | InvalidComparisonWithNil {loc} -> Printf.sprintf "%s: Nil can only compare with array, record or nil." (loc_to_string loc)
+  | InvalidNil {loc; typ} -> Printf.sprintf "%s: Expect expr of type %s, found nil." (loc_to_string loc) (TPretty.typ_to_string typ)

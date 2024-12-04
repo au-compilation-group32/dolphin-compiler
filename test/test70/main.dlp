@@ -1,0 +1,20 @@
+// Positive unusual nil test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+int main () {
+  var x = (nil, 1+1);
+  print_integer(x);
+
+  for (nil; false; nil) {}
+
+  return 0;
+}

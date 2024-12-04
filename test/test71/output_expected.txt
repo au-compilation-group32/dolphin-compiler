@@ -1,0 +1,7 @@
+nil
+nil
+not nil
+not nil
+nil
+nil
+return 0

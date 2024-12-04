@@ -1,0 +1,29 @@
+// Negative nil and function test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+bool is_nil (a: [int]) {
+  if (a == nil) {
+    return nil;
+  } else {
+    return false;
+  }
+}
+
+int main () {
+  var x: [int] = nil;
+  print_string (x);
+
+  x = new int[10];
+  print_string (x);
+ 
+  return 0;
+}

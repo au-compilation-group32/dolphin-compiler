@@ -341,8 +341,12 @@ and infertype_record_field_init env rec_name_sym expected_fields field_init =
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp , loc = infertype_expr env expr in
-  if texprtp <> tp && texprtp <> TAst.ErrorType && tp <> TAst.ErrorType
-  then let _ = Env.insert_error env (Errors.TypeMismatch {loc = loc; expected = tp; actual = texprtp}) in texpr
+  if texprtp = TAst.Nil
+    then match tp with
+      | TAst.Array _ | TAst.Record _ -> texpr
+      | _ -> let _ = Env.insert_error env (Errors.InvalidNil {loc = loc; typ = tp}) in texpr
+  else if texprtp <> tp && texprtp <> TAst.ErrorType && tp <> TAst.ErrorType
+    then let _ = Env.insert_error env (Errors.TypeMismatch {loc = loc; expected = tp; actual = texprtp}) in texpr
   else texpr 
 
 

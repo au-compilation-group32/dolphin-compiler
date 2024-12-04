@@ -1,0 +1,83 @@
+// Positive nil and function test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+bool is_nil (a: [int]) {
+  if (a == nil) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool is_nil_animal (a: [Animal]) {
+  if (a == nil) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+[int] init_int_arr (init: bool) {
+  if (init) {
+    return new int[10];
+  } else {
+    return nil;
+  }
+}
+
+[Animal] init_nil_animal () {
+  return nil;
+}
+
+int main () {
+  if (is_nil(nil)) {
+    print_string("nil");
+  } else {
+    print_string("not nil");
+  }
+
+  var x: [int] = nil;
+  if (is_nil(x)) {
+    print_string("nil");
+  } else {
+    print_string("not nil");
+  } 
+
+  x = new int[10];
+  if (is_nil(x)) {
+    print_string("nil");
+  } else {
+    print_string("not nil");
+  }
+
+  var y = init_int_arr(true);
+  if (is_nil(y)) {
+    print_string("nil");
+  } else {
+    print_string("not nil");
+  }
+
+  y = init_int_arr(false);
+  if (is_nil(y)) {
+    print_string("nil");
+  } else {
+    print_string("not nil");
+  }
+
+  var z = init_nil_animal();
+  if (is_nil_animal(z)) {
+    print_string("nil");
+  } else {
+    print_string("not nil");
+  } 
+  return 0;
+}
