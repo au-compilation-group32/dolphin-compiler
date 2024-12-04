@@ -1,0 +1,51 @@
+// Positive gep test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+record RT {
+  a: string;
+  b: [[int]];
+  c: string;
+}
+
+record ST {
+  x: int;
+  y: int;
+  z: RT;
+}
+
+int foo (s: [ST]) {
+  return s[1].z.b[5][12];
+}
+
+int main () {
+  var b = new [int][6];
+  b[5] = new int[13];
+
+  if (b[4] == nil) {print_string ("b[4]==nil");} else {print_string ("b[4]!=nil");}
+  if (b[5] == nil) {print_string ("b[5]==nil");} else {print_string ("b[5]!=nil");}
+
+  var z = new RT {a = "a"; b = nil; c = "c";};
+  if (z.b == nil) {print_string ("z.b==nil");} else {print_string ("z.b!=nil");}
+  z.b = b;
+  if (z.b == nil) {print_string ("z.b==nil");} else {print_string ("z.b!=nil");}
+
+  var s = new ST[2];
+  s[1] = new ST {x = 1; y = 2; z = z;};
+  if (s[0] == nil) {print_string ("s[0]==nil");} else {print_string ("s[0]!=nil");}
+  if (s[1] == nil) {print_string ("s[1]==nil");} else {print_string ("s[1]!=nil");}
+
+  print_integer(foo(s));
+
+  b[5][12] = 419;
+  print_integer(foo(s));
+  return 0;
+}

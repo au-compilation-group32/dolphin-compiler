@@ -73,11 +73,11 @@ let default_operand_of = function
   | TAst.Int -> Ll.IConst64 0L
   | TAst.Bool -> Ll.BConst false
   | TAst.Void -> raise UnexpectedControlFlow
-  | TAst.Byte -> raise Unimplemented
+  | TAst.Byte -> Ll.IConst8 '\000'
   | TAst.Str -> raise Unimplemented
-  | TAst.Array _ -> raise Unimplemented
-  | TAst.Record _ -> raise Unimplemented
-  | TAst.Nil -> raise Unimplemented
+  | TAst.Array _ -> Ll.Null
+  | TAst.Record _ -> Ll.Null
+  | TAst.Nil -> Ll.Null
   | TAst.ErrorType -> raise UnexpectedErrorType
 let rec find_field_index fieldname fields =
   match fields with
