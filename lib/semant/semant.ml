@@ -8,6 +8,7 @@ module Loc = Lib.Location
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnreachableControlFlow
 exception UnexpectedErrorType
+exception UnexpectedNilType
 
 let rec check_if_typ_exist env = function
 | Ast.Int _ -> ()
@@ -108,7 +109,7 @@ let rec infertype_expr env expr =
   match expr with
   | Ast.Integer {int; loc} -> (TAst.Integer {int}, TAst.Int, loc)
   | Ast.Boolean {bool; loc} -> (TAst.Boolean {bool}, TAst.Bool, loc)
-  | Ast.Nil _ -> raise Unimplemented
+  | Ast.Nil {loc} -> (TAst.Nil, TAst.Nil, loc)
   | Ast.String {str; loc} -> (TAst.String {str}, TAst.Str, loc)
   | Ast.ArrayInitialization {elem_tp; length_expr; loc} -> infertype_array_initialization env elem_tp length_expr loc
   | Ast.RecordInitialization {rec_name; fields; loc} -> infertype_record_initialization env rec_name fields loc
@@ -325,19 +326,31 @@ let typecheck_var_delc env var = match var with
     then Env.insert_error env (Errors.InvalidVoidType{loc = body_loc; sym = decl_sym})
     else () in
   let stm_tp = match tp with
-  | None -> if body_tp = TAst.Void then TAst.ErrorType else body_tp
+  | None ->
+    if body_tp = TAst.Void then TAst.ErrorType 
+    else 
+      if body_tp = TAst.Nil 
+      then let _ = Env.insert_error env (Errors.VarDeclWithAmbiguousNil {loc = loc}) in TAst.ErrorType
+      else body_tp
   | Some t -> 
     let decl_tp = typecheck_typ env t in
     match decl_tp with
-    | TAst.Int | TAst.Bool | TAst.Str | TAst.Byte | TAst.Record _ | TAst.Array _ ->
+    | TAst.Int | TAst.Bool | TAst.Str | TAst.Byte ->
       let _ =
         if decl_tp <> body_tp && body_tp <> TAst.ErrorType
+        then Env.insert_error env (Errors.TypeMismatch{loc = loc; expected = decl_tp; actual = body_tp})
+        else () in
+      decl_tp
+    | TAst.Record _ | TAst.Array _ ->
+      let _ =
+        if decl_tp <> body_tp && body_tp <> TAst.ErrorType && body_tp <> TAst.Nil
         then Env.insert_error env (Errors.TypeMismatch{loc = loc; expected = decl_tp; actual = body_tp})
         else () in
       decl_tp
     | TAst.Void ->
       let _ = Env.insert_error env (Errors.InvalidVoidType{loc = loc; sym = decl_sym}) in
       if body_tp <> TAst.Void then body_tp else TAst.ErrorType
+    | TAst.Nil -> raise UnexpectedNilType
     | TAst.ErrorType -> raise UnexpectedErrorType
   in
   let new_env = Env.insert_local_decl env decl_sym stm_tp in

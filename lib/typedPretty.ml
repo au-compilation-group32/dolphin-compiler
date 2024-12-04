@@ -10,6 +10,7 @@ let rec typ_to_string = function
 | Str  -> "str"
 | Array {typ; _} -> "[" ^ (typ_to_string typ) ^ "]"
 | Record {recordname = TypedAst.RecordName {sym; _}; _} -> Sym.name sym
+| Nil -> "nil"
 | ErrorType -> "'type error'"
 
 (* producing trees for pretty printing *)
@@ -26,6 +27,7 @@ let rec typ_to_tree tp =
   | Str -> Pretty.make_typ_line "Str"
   | Array {typ; _} -> PBox.hlist ~bars:false [Pretty.make_typ_line "["; typ_to_tree typ;Pretty.make_typ_line "]"] 
   | Record {recordname = RecordName {sym; _}; _} -> Pretty.make_typ_line (Sym.name sym)
+  | Nil -> Pretty.make_typ_line "nil"
   | ErrorType -> PBox.line_with_style (PBox.Style.set_bg_color PBox.Style.Red PBox.Style.default) "ErrorType"
 
 let binop_to_tree op =

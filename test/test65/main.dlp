@@ -1,0 +1,23 @@
+// Negative nil test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+int main () {
+  var cat = nil;
+  cat = new Animal {name = "cat"; legs = 4;};
+
+  var x :int = nil;
+
+  var a = nil;
+  a = new int[3];
+
+  return 0;
+}

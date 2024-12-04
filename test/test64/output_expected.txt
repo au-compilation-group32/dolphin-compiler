@@ -1,0 +1,21 @@
+cat == nil
+cat == nil
+nil == cat
+nil == cat
+cat != nil
+cat != nil
+nil != cat
+nil != cat
+cat
+4
+3
+0
+0
+0
+0
+419
+0
+nil == nil
+nil == nil
+2
+return 0

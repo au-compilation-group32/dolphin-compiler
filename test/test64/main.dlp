@@ -1,0 +1,93 @@
+// Positive nil test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+record Animal {
+  name: string;
+  legs: int;
+}
+
+int main () {
+  var cat: Animal = nil;
+  if (cat == nil) {
+    print_string("cat == nil");
+  } else {
+    print_string("cat != nil");
+  }
+
+  if (cat != nil) {
+    print_string("cat != nil");
+  } else {
+    print_string("cat == nil");
+  }
+
+  if (nil == cat) {
+    print_string("nil == cat");
+  } else {
+    print_string("nil != cat");
+  }
+
+  if (nil != cat) {
+    print_string("nil != cat");
+  } else {
+    print_string("nil == cat");
+  }
+  
+  cat = new Animal {name = "cat"; legs = 4;};
+
+  if (cat == nil) {
+    print_string("cat == nil");
+  } else {
+    print_string("cat != nil");
+  }
+
+  if (cat != nil) {
+    print_string("cat != nil");
+  } else {
+    print_string("cat == nil");
+  }
+
+  if (nil == cat) {
+    print_string("nil == cat");
+  } else {
+    print_string("nil != cat");
+  }
+
+  if (nil != cat) {
+    print_string("nil != cat");
+  } else {
+    print_string("nil == cat");
+  }
+  print_string(cat.name);
+  print_integer(cat.legs);
+
+  var a : [int]= nil;
+  a = new int[3];
+  print_integer(length_of(a));
+  for (var i = 0; i < length_of(a); i = i+1) {
+    print_integer(a[i]);
+  }
+
+  a[1] = 419;
+  for (var i = 0; i < length_of(a); i = i+1) {
+    print_integer(a[i]);
+  }
+
+  if (nil == nil) {
+    print_string("nil == nil");
+  } else {
+    print_string("nil != nil");
+  }
+  if (nil != nil) {
+    print_string("nil != nil");
+  } else {
+    print_string("nil == nil");
+  }
+
+  var x = (nil, 1+1);
+  print_integer(x);
+  return 0;
+}

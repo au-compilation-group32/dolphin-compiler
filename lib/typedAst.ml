@@ -15,6 +15,7 @@ type typ =
 | Str
 | Array of {typ : typ;}
 | Record of {recordname : recordname}
+| Nil
 | ErrorType
 
 

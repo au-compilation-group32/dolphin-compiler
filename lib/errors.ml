@@ -44,6 +44,7 @@ type error =
 | IndexAccessOfNonArray of {loc: Location.location}
 | LengthOfExprInvalidType of {loc: Location.location; expr_tp: TAst.typ}
 | ArrayInvalidElemTypeVoid of {loc: Location.location}
+| VarDeclWithAmbiguousNil of {loc: Location.location}
 
 (* Useful for printing errors *)
 let error_to_string err =
@@ -81,3 +82,4 @@ let error_to_string err =
   | IndexAccessOfNonArray {loc} -> Printf.sprintf "%s: Index access of non array." (loc_to_string loc)
   | LengthOfExprInvalidType {loc; expr_tp} -> Printf.sprintf "%s: Invalid type %s for length_of expression, expect string or array." (loc_to_string loc) (TPretty.typ_to_string expr_tp)
   | ArrayInvalidElemTypeVoid {loc} -> Printf.sprintf "%s: Array elements must have non-void type." (loc_to_string loc)
+  | VarDeclWithAmbiguousNil {loc} -> Printf.sprintf "%s: Var declaration with ambiguous nil type." (loc_to_string loc)

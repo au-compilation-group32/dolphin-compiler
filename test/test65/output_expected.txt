@@ -1,0 +1,3 @@
+[36m@ 14:6-15[0m: Var declaration with ambiguous nil type.
+[36m@ 17:6-18[0m: Type mismatch: expected int but found nil.
+[36m@ 19:6-13[0m: Var declaration with ambiguous nil type.
