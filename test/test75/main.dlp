@@ -1,0 +1,43 @@
+// Positive string compare test
+
+void print_string (s:string) {
+  output_string (s, get_stdout());
+  output_string ("\n", get_stdout());
+}
+
+int main () {
+  if ("a"=="a") {
+    print_string("==");
+  }
+
+  if ("a"!="a2") {
+    print_string("!=");
+  }
+
+
+  if ("a"<"b"){
+    print_string("<");
+  }
+
+  if ("a1">"a"){
+    print_string(">");
+  }
+
+  if ("a"<="a1"){
+    print_string("<=");
+  }
+
+  if ("a"<="a1"){
+    print_string("<=");
+  }
+
+  if ("a1">="a"){
+    print_string(">=");
+  }
+
+  if ("a">="a"){
+    print_string(">=");
+  }
+
+  return 0;
+}

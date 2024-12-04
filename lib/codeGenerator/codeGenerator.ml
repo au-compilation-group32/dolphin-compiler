@@ -11,6 +11,7 @@ exception UnexpectedNilType
 exception UnexpectedOperator
 exception UnexpectedControlFlow
 exception FieldNotFound
+exception UnexpectedByteType
 
 let rec type_of_expr = function
   | TAst.Integer _ -> TAst.Int
@@ -112,7 +113,8 @@ let get_binop_insn res_op left_op op right_op op_tp =
     | TAst.Int -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.I64, left_op, right_op))
     | TAst.Bool -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.I1, left_op, right_op))
     | TAst.Void -> raise UnexpectedVoidType
-    | TAst.Byte | TAst.Str -> raise Unimplemented
+    | TAst.Byte -> raise UnexpectedByteType
+    | TAst.Str -> raise Unimplemented
     | TAst.Array _ | TAst.Record _ -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.Ptr Ll.I8, left_op, right_op))
     | TAst.Nil -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.Ptr Ll.I8, Ll.Null, Ll.Null))
     | TAst.ErrorType -> raise UnexpectedErrorType
@@ -122,7 +124,8 @@ let get_binop_insn res_op left_op op right_op op_tp =
     | TAst.Int -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.I64, left_op, right_op))
     | TAst.Bool -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.I1, left_op, right_op))
     | TAst.Void -> raise UnexpectedVoidType
-    | TAst.Byte | TAst.Str -> raise Unimplemented
+    | TAst.Byte -> raise UnexpectedByteType
+    | TAst.Str -> raise Unimplemented
     | TAst.Array _ | TAst.Record _ -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.Ptr Ll.I8, left_op, right_op))
     | TAst.Nil -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.Ptr Ll.I8, Ll.Null, Ll.Null))
     | TAst.ErrorType -> raise UnexpectedErrorType
@@ -154,6 +157,16 @@ let get_short_circuit_insns env res_op left_buildlets left_op op right_buildlets
     in
     [term_curr_blk; start_blk_left] @ left_buildlets @ [icmp_insn; term_blk_left; start_blk_right] @ right_buildlets @ [term_blk_right; start_merge_blk; phi_insn] 
   | TAst.Plus | TAst.Minus | TAst.Mul | TAst.Div | TAst.Rem | TAst.Gt | TAst.Ge | TAst.Lt | TAst.Le | TAst.Eq | TAst.NEq -> raise UnexpectedOperator
+
+let get_str_icmp_insn res_op compare_res_sym op =
+  match op with
+  | TAst.Plus | Minus | Mul | Div | Rem |Lor | Land -> raise UnexpectedControlFlow
+  | TAst.Lt -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Slt, Ll.I64, Ll.Id compare_res_sym, Ll.IConst64 0L))
+  | TAst.Le -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sle, Ll.I64, Ll.Id compare_res_sym, Ll.IConst64 0L))
+  | TAst.Gt -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sgt, Ll.I64, Ll.Id compare_res_sym, Ll.IConst64 0L))
+  | TAst.Ge -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Sge, Ll.I64, Ll.Id compare_res_sym, Ll.IConst64 0L))
+  | TAst.Eq -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Eq, Ll.I64, Ll.Id compare_res_sym, Ll.IConst64 0L))
+  | TAst.NEq -> CfgBuilder.add_insn(Some res_op, Ll.Icmp(Ll.Ne, Ll.I64, Ll.Id compare_res_sym, Ll.IConst64 0L))
 
 let rec codegen_expr env expr =
   match expr with
@@ -246,8 +259,18 @@ and codegen_binop env left op right tp =
     let left_op_tp = type_of_expr left in
     let right_op_tp = type_of_expr right in
     let op_tp = if left_op_tp <> TAst.Nil then left_op_tp else right_op_tp in
-    let binop_insn = get_binop_insn tmp_alias_sym left_op op right_op op_tp in
-    left_buildlets @right_buildlets @ [binop_insn]
+    let binop_insns =
+      if op_tp = TAst.Str
+      then
+        let _, compare_res_sym = Env.insert_reg_with_txt env "compare_res" in
+        let call = Ll.Call(Ll.I64, Ll.Gid (Sym.symbol "compare_strings"), [(ll_array, left_op); (ll_array, right_op)]) in
+        let call_insn = CfgBuilder.add_insn (Some compare_res_sym, call) in
+        let icmp_insn = get_str_icmp_insn tmp_alias_sym compare_res_sym op in
+        [call_insn; icmp_insn]
+      else 
+        let binop_insn = get_binop_insn tmp_alias_sym left_op op right_op op_tp in
+        [binop_insn] in
+    left_buildlets @right_buildlets @ binop_insns
   end in
   (final_buildlets, ll_tp, tmp_op)
 and codegen_unop env op operand tp =
