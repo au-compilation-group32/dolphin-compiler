@@ -70,7 +70,7 @@ rule token = parse
     | None -> raise (IntegerOutOfRange(loc, s))
     | Some i -> INT_LIT i
   }
-| '"'[^'"']*'"' as s {
+| '"' ([^ '"' '\\'] | '\\' ['n' 't' '\\' '"'])* '"' as s {
     let len = String.length s in
     STRING_LIT (String.sub s 1 (len-2))
   }
