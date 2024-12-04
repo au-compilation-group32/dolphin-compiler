@@ -10,7 +10,7 @@ record Animal {
 }
 
 int main () {
-  var x: [int] = nil;
-  x[0] = 1;
+  var x: Animal = nil;
+  x.legs = 2;
   return 0;
 }
