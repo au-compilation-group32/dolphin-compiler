@@ -163,7 +163,6 @@ let rec codegen_expr env expr =
   | TAst.Call {fname; args; tp} ->  codegen_call env fname args tp
   | TAst.Comma {left; right; tp} -> codegen_comma env left right tp
 and codegen_string env str =
-  (*TODO: handle 2 string that is exactly the same*)
   let len = String.length str in
   let _, str_lit_sym = Env.insert_str_lit_reg env str in
   let _, conv_str_lit_packed_sym = Env.insert_conv_reg env in 
@@ -261,7 +260,6 @@ and codegen_lval env = function
     let _ = assert(index_ll_tp = Ll.I64) in
     let elem_ll_tp = ll_type_of tp in
     let new_env, arr_content_ptr_sym = Env.insert_ptr_reg env in
-    (*TODO: check this gep path*)
     let arr_content_gep_path = [Ll.IConst64 0L; Ll.IConst32 (Int32.of_int 1)] in
     let arr_content_gep_insn = CfgBuilder.add_insn (Some arr_content_ptr_sym, Ll.Gep (ll_array_raw, arr_op, arr_content_gep_path)) in
     let _, casted_array_ptr_sym = Env.insert_ptr_reg env in

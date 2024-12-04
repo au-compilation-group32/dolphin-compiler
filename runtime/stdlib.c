@@ -739,7 +739,6 @@ char socket_close(struct socket *soc){
   return 1;
 }
 
-//TODO: convert these external functions into proper library func
 int64_t read_integer () {
     int64_t value;
     printf("Please enter an integer: ");
