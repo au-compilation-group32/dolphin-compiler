@@ -8,6 +8,7 @@ let runtime_functions =
   [
     (Sym.symbol "allocate_record", ([Ll.I32], Ll.Ptr Ll.I8));
     (Sym.symbol "allocate_array", ([Ll.I32; Ll.I64; Ll.Ptr Ll.I8], ll_array));
+    (Sym.symbol "compare_strings", ([ll_array; ll_array], Ll.I64));
     (Sym.symbol "report_error_division_by_zero", ([], Ll.Ptr Ll.I8));
     (Sym.symbol "report_error_nil_access", ([], Ll.Ptr Ll.I8));
     (Sym.symbol "report_error_array_index_out_of_bounds", ([], Ll.Ptr Ll.I8));

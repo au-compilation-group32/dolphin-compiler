@@ -1,0 +1,26 @@
+HelloWorld
+10
+HelloWorld
+10
+Hello World
+11
+Hello World
+
+12
+Hello World
+
+12
+Hello	World
+11
+Hello	World
+
+12
+cat
+4
+cat
+2
+cat
+4
+spider
+8
+return 0
