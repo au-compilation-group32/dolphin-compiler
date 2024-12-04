@@ -41,7 +41,34 @@ Each test case is stored in a directory (i.e. test1). Inside this, main.dlp stor
 
 If semant fail, output_actual.txt and output_expected.txt is the list of errors instead
 
-## Tasks explanation
+##
+
+List of fixes:
+
+### Phase 1:
+
+all issues has been fixed
+
+### Phase 2:
+
+all issues has been fixed
+
+### Phase 3:
+
+all issues has been fixed with the exception of the shift/reduce conflict involving ELSE
+
+### Phase 4:
+
+The shift/reduce conflict is the same as phase 3, so I'll consider that all issues has been fixed.
+
+### Phase 5:
+
+Everything has been implemented. The only issues we have is the default value of string doesn't work.
+
+Another thing is that we choose not to implement Nil as an Undetermined type, but create a typ in TypedAst call Nil. This Nil type receive special treatment similar to TAst.Void and TAst.ErrorType.
+This approach does allowed us to infer the type of the Nil expr, but otherwise, it works.
+
+## Phase 5 Tasks explanation
 
 ### Task 1:
 
@@ -49,7 +76,7 @@ Check the code in lib/ast.ml and lib/typedAst.ml
 
 ### Task 2:
 
-Check the code in lib/srcProcessor/lexer.mll. Most feature are implemented, but unescaped string is not.
+Check the code in lib/srcProcessor/lexer.mll. Most feature are implemented, including unescaped strings.
 
 ### Task 3:
 
@@ -57,20 +84,12 @@ Check the code in lib/srcProcessor/parser.mly.
 
 ### Task 4:
 
-Check the code in lib/semant/semant.ml. Most positive features are implemented for string and record. Some part of Array is supported. We only have time to check for a few errors.
+Check the code in lib/semant/semant.ml.
 
 ### Task 5:
 
 The runtime has been incoporated properly. Check the runtime directory. Do note that we don't rename any record and function name (with the exception of main to dolphin_fun_main).
 
-Most feature of codegen for string and record have been implemented.
-
 ### Task 6:
 
-test 58 and 59 are new. Test 60 is for array, and it pass semant successfully.
-
-## TODO list:
-
-- Fix edge case of min negative integer.
-- Test all BiNops
-- Improve test22: Currently only check for error in the outermost scope, need to check the scope of inner loops as well.
+test 58-75 are new. Test 80 fails since we have seg fault when implementing default string.
