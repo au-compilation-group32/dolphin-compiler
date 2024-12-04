@@ -5,8 +5,6 @@ module Lexer = Lexer
 module Parser = Parser
 module Errors = Lib.Errors
  
-exception Unimplemented
-
 type lexResult =
 | LexSuccess of Ast.program
 | LexFailure of Errors.error

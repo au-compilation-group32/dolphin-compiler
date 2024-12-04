@@ -66,7 +66,7 @@ let rec heap_size_of env = function
     let fields = Env.lookup_rec_type env sym in
     let size_of_fields = List.map (fun (TAst.RecordField {typ; _}) -> (heap_size_of env typ)) fields in
     List.fold_left ( + ) 0 size_of_fields
-  | TAst.Nil -> raise Unimplemented
+  | TAst.Nil -> 1
   | TAst.ErrorType -> raise UnexpectedErrorType
 
 let default_operand_of = function

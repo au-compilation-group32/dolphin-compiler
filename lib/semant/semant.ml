@@ -5,7 +5,6 @@ module Env = Lib.Env
 module Errors = Lib.Errors
 module Loc = Lib.Location
 
-exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnreachableControlFlow
 exception UnexpectedErrorType
 exception UnexpectedNilType

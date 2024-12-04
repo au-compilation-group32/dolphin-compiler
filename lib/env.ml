@@ -1,7 +1,5 @@
 (* Env module *)
 
-exception Unimplemented (* your code should eventually compile without this exception *)
-
 module Sym = Symbol
 module Ast = Ast
 module TAst = TypedAst
