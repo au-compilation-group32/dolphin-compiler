@@ -10,8 +10,14 @@ let rec sym_list_to_string syms = match syms with
 | [e] -> Symbol.name e
 | h::t -> (Symbol.name h) ^ ", " ^ sym_list_to_string t
 
+let rec typ_list_to_string typs = match typs with
+| [] -> ""
+| [e] -> TPretty.typ_to_string e
+| h::t -> (TPretty.typ_to_string h) ^ ", " ^ typ_list_to_string t
+
 type error =
 | TypeMismatch of {loc: Location.location; expected : TAst.typ; actual : TAst.typ}
+| TypeMismatchList of {loc: Location.location; expected : TAst.typ list; actual : TAst.typ}
 | ShouldBeCallOrAssignment of {loc: Location.location}
 | LValueNotFound of {loc: Location.location; sym: Sym.symbol}
 | LValueInvalid of {loc: Location.location; sym: Sym.symbol}
@@ -45,11 +51,13 @@ type error =
 | LengthOfExprInvalidType of {loc: Location.location; expr_tp: TAst.typ}
 | ArrayInvalidElemTypeVoid of {loc: Location.location}
 | VarDeclWithAmbiguousNil of {loc: Location.location}
+| InvalidComparisonWithNil of {loc: Location.location}
 
 (* Useful for printing errors *)
 let error_to_string err =
   match err with
   | TypeMismatch {loc; expected; actual} -> Printf.sprintf "%s: Type mismatch: expected %s but found %s." (loc_to_string loc) (TPretty.typ_to_string expected) (TPretty.typ_to_string actual)
+  | TypeMismatchList {loc; expected; actual} -> Printf.sprintf "%s: Type mismatch: expected %s but found %s." (loc_to_string loc) (typ_list_to_string expected) (TPretty.typ_to_string actual)
   | LValueNotFound {loc; sym} -> Printf.sprintf "%s: LValue %s not found." (loc_to_string loc) (Sym.name sym) 
   | LValueInvalid {loc; sym} -> Printf.sprintf "%s: LValue %s is invalid." (loc_to_string loc) (Sym.name sym)
   | FunctionUndeclared {loc; sym} -> Printf.sprintf "%s: Undeclared function %s." (loc_to_string loc) (Sym.name sym)
@@ -83,3 +91,4 @@ let error_to_string err =
   | LengthOfExprInvalidType {loc; expr_tp} -> Printf.sprintf "%s: Invalid type %s for length_of expression, expect string or array." (loc_to_string loc) (TPretty.typ_to_string expr_tp)
   | ArrayInvalidElemTypeVoid {loc} -> Printf.sprintf "%s: Array elements must have non-void type." (loc_to_string loc)
   | VarDeclWithAmbiguousNil {loc} -> Printf.sprintf "%s: Var declaration with ambiguous nil type." (loc_to_string loc)
+  | InvalidComparisonWithNil {loc} -> Printf.sprintf "%s: Nil can only compare with array, record or nil." (loc_to_string loc)

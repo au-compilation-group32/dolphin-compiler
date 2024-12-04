@@ -1,3 +1,15 @@
 [36m@ 14:6-15[0m: Var declaration with ambiguous nil type.
 [36m@ 17:6-18[0m: Type mismatch: expected int but found nil.
 [36m@ 19:6-13[0m: Var declaration with ambiguous nil type.
+[36m@ 24:6-9[0m: Type mismatch: expected int, str but found Animal.
+[36m@ 24:12-15[0m: Type mismatch: expected int, str but found nil.
+[36m@ 24:6-15[0m: Type mismatch: expected Animal but found nil.
+[36m@ 25:6-9[0m: Type mismatch: expected int, str but found Animal.
+[36m@ 25:12-15[0m: Type mismatch: expected int, str but found nil.
+[36m@ 25:6-15[0m: Type mismatch: expected Animal but found nil.
+[36m@ 28:6-7[0m: Type mismatch: expected int, str but found [int].
+[36m@ 28:10-13[0m: Type mismatch: expected int, str but found nil.
+[36m@ 28:6-13[0m: Type mismatch: expected [int] but found nil.
+[36m@ 29:6-7[0m: Type mismatch: expected int, str but found [int].
+[36m@ 29:10-13[0m: Type mismatch: expected int, str but found nil.
+[36m@ 29:6-13[0m: Type mismatch: expected [int] but found nil.

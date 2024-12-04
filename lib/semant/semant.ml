@@ -69,7 +69,7 @@ let typecheck_unop = function
 let get_expected_binop_arg_typ op =
   let open Lib.Ast in match op with
   | Plus _ | Minus _ | Mul _ | Div _ | Rem _ -> TAst.Int
-  | Lt _ | Le _ | Gt _ | Ge _ -> TAst.Int
+  | Lt _ | Le _ | Gt _ | Ge _ -> raise UnreachableControlFlow
   | Lor _ | Land _ -> TAst.Bool 
   | Eq _ | NEq _ -> raise UnreachableControlFlow
 let get_expected_binop_res_typ op =
@@ -169,11 +169,25 @@ and infertype_length_of env expr loc =
   (TAst.LengthOf {expr = typed_expr}, TAst.Int, loc)
 and infertype_binop env left op right loc =
     match op with
-    | Plus _ | Minus _ | Mul _ | Div _ | Rem _ | Lt _ | Le _ | Gt _ | Ge _ | Lor _ | Land _ -> 
+    | Plus _ | Minus _ | Mul _ | Div _ | Rem _ | Lor _ | Land _ -> 
       let expected_arg_typ = get_expected_binop_arg_typ op in
       let expected_res_typ = get_expected_binop_res_typ op in
       let left_texpr = typecheck_expr env left expected_arg_typ in
       let right_texpr = typecheck_expr env right expected_arg_typ in
+      (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = expected_res_typ}, expected_res_typ, loc)
+    | Lt _ | Le _ | Gt _ | Ge _ ->
+      let expected_res_typ = get_expected_binop_res_typ op in
+      let left_texpr, left_tp, left_loc = infertype_expr env left in
+      let right_texpr, right_tp, right_loc = infertype_expr env right in
+      let _ = match left_tp with
+        | TAst.Int | TAst.Str | TAst.ErrorType -> ()
+        | _ -> Env.insert_error env (Errors.TypeMismatchList {loc = left_loc; expected = [TAst.Int; TAst.Str]; actual = left_tp}) in
+      let _ = match right_tp with
+        | TAst.Int | TAst.Str | TAst.ErrorType -> ()
+        | _ -> Env.insert_error env (Errors.TypeMismatchList {loc = right_loc; expected = [TAst.Int; TAst.Str]; actual = right_tp}) in
+      let _ =
+        if left_tp <> TAst.ErrorType && right_tp <> TAst.ErrorType && left_tp <> right_tp
+        then Env.insert_error env (Errors.TypeMismatch {loc = loc; expected = left_tp; actual = right_tp}) else () in
       (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = expected_res_typ}, expected_res_typ, loc)
     | Eq _ | NEq _ ->
       let right_texpr, right_tp, right_loc = infertype_expr env right in
@@ -183,6 +197,21 @@ and infertype_binop env left op right loc =
         then Env.insert_error env (Errors.InvalidVoidTypeOperand{loc = right_loc})
         else if left_tp = TAst.Void 
         then Env.insert_error env (Errors.InvalidVoidTypeOperand{loc = left_loc})
+        else () in
+      let _ =
+        if right_tp = TAst.Nil then match left_tp with
+          | TAst.Nil | TAst.Array _ | TAst.Record _ -> ()
+          | _ -> Env.insert_error env (Errors.InvalidComparisonWithNil {loc = loc})
+        else if left_tp = TAst.Nil then match right_tp with 
+          | TAst.Nil | TAst.Array _ | TAst.Record _ -> ()
+          | _ -> Env.insert_error env (Errors.InvalidComparisonWithNil {loc = loc}) in
+      let _ =
+        if right_tp <> TAst.Void && right_tp <> TAst.Nil && right_tp <> TAst.ErrorType &&
+          left_tp <> TAst.Void && left_tp <> TAst.Nil && left_tp <> TAst.ErrorType &&
+          left_tp <> right_tp
+        then 
+          let _ = Printf.printf "mismatch \n" in
+          Env.insert_error env (Errors.TypeMismatch {loc = loc; actual = left_tp; expected = right_tp})
         else () in
       (TAst.BinOp {left = left_texpr; op = typecheck_binop op; right = right_texpr; tp = TAst.Bool}, TAst.Bool, loc)
 and infertype_unop env op operand loc =

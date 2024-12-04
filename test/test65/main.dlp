@@ -19,5 +19,15 @@ int main () {
   var a = nil;
   a = new int[3];
 
+  var cat = new Animal {name = "cat"; legs = 4;};
+  var a = new int[3];
+  if (cat > nil) {}
+  if (cat < nil) {}
+  if (cat == nil) {}
+  if (cat != nil) {}
+  if (a > nil) {}
+  if (a < nil) {}
+  if (a == nil) {}
+  if (a != nil) {}
   return 0;
 }
