@@ -2,11 +2,17 @@
 module Loc = Location
 
 type ident = Ident of {name : string; loc : Loc.location}
+type recordname = RecordName of {name : string; loc : Loc.location}
+type fieldname = FieldName of {name : string; loc : Loc.location}
 
 type typ =
 | Int of {loc : Loc.location}
 | Bool of {loc : Loc.location}
 | Void of {loc : Loc.location}
+| Byte of {loc : Loc.location}
+| Str of {loc : Loc.location}
+| Array of {typ : typ; loc : Loc.location}
+| Record of {recordname : recordname}
 
 type binop =
 | Plus of {loc : Loc.location}
@@ -30,6 +36,11 @@ type unop =
 type expr =
 | Integer of {int : int64; loc : Loc.location}
 | Boolean of {bool : bool; loc : Loc.location}
+| Nil of {loc: Loc.location}
+| String of {str: string; loc : Loc.location}
+| ArrayInitialization of {tp: typ; length_expr: expr; loc: Loc.location}
+| RecordInitialization of {rec_tp: typ; fields: record_field_init list; loc: Loc.location}
+| LengthOf of {ident: ident; loc: Loc.location}
 | BinOp of {left : expr; op : binop; right : expr; loc : Loc.location}
 | UnOp of {op : unop; operand : expr; loc : Loc.location}
 | Lval of lval
@@ -38,6 +49,9 @@ type expr =
 | Comma of {left : expr; right : expr; loc : Loc.location}
 and lval =
 | Var of ident
+| Idx of {arr: expr; index: expr; loc: Loc.location}
+| Fld of {record: expr; field: fieldname; loc: Loc.location}
+and record_field_init = RecordFieldInit of {recordname: recordname; expr: expr; loc: Loc.location}
 
 type single_declaration = Declaration of {name : ident; tp : typ option; body : expr; loc : Loc.location}
 
@@ -64,4 +78,12 @@ type function_body = FuncBody of {stms : statement list; loc : Loc.location}
 
 type function_declaration = FuncDecl of {name : ident; ret_tp : typ; params : param list; body : function_body; loc : Loc.location}
 
-type program = function_declaration list
+type record_field = RecordField of {recordname: recordname; typ: typ; loc: Loc.location}
+
+type record_declaration = RecDecl of {rec_name: recordname; fields: record_field list; loc : Loc.location}
+
+type toplevel_declaration =
+| RecordDeclaration of record_declaration
+| FunctionDeclaration of function_declaration
+
+type program = toplevel_declaration list
